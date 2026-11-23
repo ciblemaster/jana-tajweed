@@ -77,6 +77,15 @@ export function chooseProfile(id: string) {
   write({ ...load(), current: id });
 }
 
+/** Adds or updates a child as another device has them (sync), keeping who is chosen on this one. */
+export function saveProfile(profile: Profile) {
+  const store = load();
+  const known = store.profiles.some((p) => p.id === profile.id);
+  if (!known && store.profiles.length >= MAX) return;
+  const profiles = known ? store.profiles.map((p) => (p.id === profile.id ? profile : p)) : [...store.profiles, profile];
+  write({ profiles, current: store.current ?? profile.id });
+}
+
 /** Removes a child and everything they won on this device. */
 export function removeProfile(id: string) {
   const store = load();
