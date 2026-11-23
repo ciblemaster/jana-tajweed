@@ -1,6 +1,8 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
+import { registerSW } from 'virtual:pwa-register';
 import { sync } from './account/sync';
+import { isNativeApp } from './core/api';
 import App from './App';
 import './app.css';
 
@@ -16,3 +18,6 @@ quietSync();
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'hidden') quietSync();
 });
+
+// Offline and installable on the web; inside the iOS and Android apps the files are already on the device.
+if (!isNativeApp()) registerSW({ immediate: true });

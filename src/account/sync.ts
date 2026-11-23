@@ -1,3 +1,4 @@
+import { apiUrl } from '../core/api';
 import { AVATARS, BANDS, listProfiles, removeProfile, saveProfile, type Profile } from '../profiles/store';
 import { emptyProgress, mergeProgress, readProgressOf, writeProgressOf, type Progress } from '../tajweed/progress';
 
@@ -46,9 +47,9 @@ export class ApiError extends Error {
 async function api<T>(method: string, path: string, body?: unknown): Promise<T> {
   let res: Response;
   try {
-    res = await fetch(`/api${path}`, {
+    res = await fetch(apiUrl(path), {
       method,
-      credentials: 'same-origin',
+      credentials: 'include',
       headers: body === undefined ? undefined : { 'Content-Type': 'application/json' },
       body: body === undefined ? undefined : JSON.stringify(body)
     });

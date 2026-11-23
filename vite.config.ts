@@ -10,6 +10,8 @@ export default defineConfig({
     // (Safari) needs the files hosted with the right headers first.
     VitePWA({
       registerType: 'autoUpdate',
+      // Registered in main.tsx, and only on the web: the phone apps carry their files already.
+      injectRegister: null,
       includeAssets: ['icons/icon.svg', 'icons/apple-touch-icon.png', 'fonts/UthmanicHafs.woff2'],
       manifest: {
         name: 'Jana Tajweed',

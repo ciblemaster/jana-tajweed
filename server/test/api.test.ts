@@ -1,3 +1,4 @@
+import { createServer, type Server } from 'node:http';
 import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { createApp } from '../src/app';
@@ -99,5 +100,61 @@ describe.skipIf(!url)('api', () => {
   it('slows down guessing after ten wrong passwords', async () => {
     for (let i = 0; i < 10; i++) await request(app).post('/api/login').send({ email: 'mum@example.com', password: `guess ${i}!` }).expect(401);
     await request(app).post('/api/login').send({ email: 'mum@example.com', password: 'long enough' }).expect(429);
+  });
+});
+
+describe.skipIf(!url)('voice feedback', () => {
+  let speech: Server;
+  let got: { letters: unknown[]; audio: string } | null = null;
+  let voiceApp: ReturnType<typeof createApp>;
+
+  beforeAll(async () => {
+    db = connect(url);
+    await migrate(db);
+    // A stand-in for scripts/tajweed/serve.py: hears every letter.
+    speech = createServer((req, res) => {
+      if (req.url === '/health') return res.end('{"ok":true}');
+      let body = '';
+      req.on('data', (c) => (body += c));
+      req.on('end', () => {
+        got = JSON.parse(body);
+        res.setHeader('Content-Type', 'application/json');
+        res.end(JSON.stringify({ heard: got!.letters.map((_, i) => ({ startMs: i * 300, endMs: i * 300 + 250, score: 0.9 })), durationMs: 1000 }));
+      });
+    });
+    await new Promise<void>((resolve) => speech.listen(0, '127.0.0.1', resolve));
+    const port = (speech.address() as { port: number }).port;
+    voiceApp = createApp(db, { secret: 'test', speechUrl: `http://127.0.0.1:${port}` });
+  });
+  afterAll(async () => {
+    speech?.close();
+    await db?.end();
+  });
+
+  const letters = [{ text: 'قُ', rule: null, word: 0 }, { text: 'لۡ', word: 0 }];
+  const audio = Buffer.from('fake audio').toString('base64');
+
+  it('says whether voice feedback is available', async () => {
+    expect((await request(voiceApp).get('/api/voice')).body).toEqual({ available: true });
+    expect((await request(createApp(db, { secret: 'test' })).get('/api/voice')).body).toEqual({ available: false });
+  });
+
+  it('needs a grown-up signed in, and a well-formed verse', async () => {
+    await request(voiceApp).post('/api/voice/check').send({ letters, audio }).expect(401);
+    const agent = request.agent(voiceApp);
+    await agent.post('/api/signup').send({ email: 'voice@example.com', password: 'long enough' }).expect(201);
+    await agent.post('/api/voice/check').send({ letters: [], audio }).expect(400);
+    await agent.post('/api/voice/check').send({ letters: [{ text: 'x'.repeat(20), word: 0 }], audio }).expect(400);
+    await agent.post('/api/voice/check').send({ letters }).expect(400);
+  });
+
+  it('passes the recording to the speech service and its answer back', async () => {
+    const agent = request.agent(voiceApp);
+    await agent.post('/api/login').send({ email: 'voice@example.com', password: 'long enough' }).expect(200);
+    const res = await agent.post('/api/voice/check').send({ letters, audio }).expect(200);
+    expect(res.body.heard).toHaveLength(2);
+    expect(got).toEqual({ letters: [{ text: 'قُ', rule: null, word: 0 }, { text: 'لۡ', rule: null, word: 0 }], audio });
+    // A recording a few MB big is accepted on this route only.
+    await agent.post('/api/voice/check').send({ letters, audio: 'A'.repeat(3_000_000) }).expect(200);
   });
 });

@@ -10,7 +10,7 @@ if (!secret) throw new Error('SESSION_SECRET is not set');
 
 const db = connect();
 await migrate(db);
-const app = createApp(db, { secret, secure: production });
+const app = createApp(db, { secret, secure: production, speechUrl: process.env.SPEECH_URL });
 
 // In production the same server hands out the built app, so the cookie stays on one site.
 const dist = fileURLToPath(new URL('../../dist', import.meta.url));

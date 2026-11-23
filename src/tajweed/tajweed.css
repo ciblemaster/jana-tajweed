@@ -464,3 +464,13 @@ a.tj-pill { text-decoration: none; }
 .tj-hear[aria-pressed='true'] { background: var(--tj-go); color: #fff; }
 .tj-record svg { flex: none; }
 .tj-mic-off { margin: 8px auto 0; max-inline-size: 420px; padding: 10px 14px; border-radius: 16px; background: #fff0f0; color: #a61e1e; font-weight: 700; text-align: center; }
+
+/* Voice feedback (trial) */
+.tj-voice { display: grid; justify-items: center; gap: 6px; margin-block-start: 8px; }
+.tj-trial { margin-inline-start: 6px; padding: 1px 6px; border-radius: 8px; background: #fff4d6; color: #8a6200; font-size: 0.75rem; font-weight: 800; }
+.tj-voice-words { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; margin: 0; font-size: 1.6rem; line-height: 1.8; }
+.tj-voice-words span { padding: 0 8px; border-radius: 12px; }
+.tj-voice-words [data-state='good'] { background: #e1f7e9; color: #146c3c; }
+.tj-voice-words [data-state='almost'] { background: #fff1d6; color: #8a5300; }
+.tj-voice-words [data-state='again'] { background: #eceff4; color: #6b7389; }
+.tj-voice-tip { margin: 0; font-weight: 800; text-align: center; }

@@ -66,3 +66,37 @@ Server tests need a throwaway Postgres database:
 ```sh
 cd server && TEST_DATABASE_URL=postgres://localhost/jana_test npm test
 ```
+
+## Voice feedback (trial, optional)
+
+With a grown-up's account, voice feedback can be turned on per device on the grown-ups' page. After a child recites a
+verse with "Record me" on, "Check my reading" sends that one take to the server, which passes it to the speech service
+and keeps nothing. Each word then shows green (clear), orange (almost, or a long sound held too short) or grey
+(say it again), with one tip. Scoring is in `src/core/tajweed/feedback.ts`.
+
+The speech service is `scripts/tajweed/serve.py` (Meta's MMS aligner, the same as `align.py`):
+
+```sh
+uv venv --python 3.11 .venv && uv pip install --python .venv/bin/python torch==2.5.1 torchaudio==2.5.1 numpy
+.venv/bin/python scripts/tajweed/serve.py      # 127.0.0.1:8790, downloads the 1.2 GB model on first start; needs ffmpeg
+```
+
+Then start the server with `SPEECH_URL=http://127.0.0.1:8790`. It is a trial: per the plan, it should be checked
+against a teacher on real children's recitations (8 verses in 10 agreeing) before it is shown to children widely.
+`python3 -m unittest scripts/tajweed/test_sounds.py` tests how letters are said (no torch needed).
+
+## Phone and tablet apps (Capacitor)
+
+`android/` and `ios/` hold the native shells around the same web app. To build them:
+
+```sh
+VITE_API_URL=https://your-server.example npm run app:sync   # build the web app and copy it into both shells
+npm run app:android                                        # opens Android Studio: Run, or Build > Generate Signed Bundle
+npm run app:ios                                            # opens Xcode (on a Mac, after `cd ios/App && pod install`)
+```
+
+Without `VITE_API_URL` the apps work fully on the device, without accounts or voice feedback. Calls to the server
+go through Capacitor's native HTTP layer, so the sign-in cookie works inside the app. The microphone permission is
+declared for both (Android `RECORD_AUDIO`, iOS `NSMicrophoneUsageDescription`). The service worker is only
+registered on the web. Store icons and splash screens still need to be made from `public/icons/`
+(for example with `npx @capacitor/assets generate`).

@@ -9,9 +9,15 @@
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
     "test": "vitest run",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "app:sync": "npm run build && cap sync",
+    "app:android": "cap open android",
+    "app:ios": "cap open ios"
   },
   "dependencies": {
+    "@capacitor/android": "^6.2.0",
+    "@capacitor/core": "^6.2.0",
+    "@capacitor/ios": "^6.2.0",
     "@fontsource/lalezar": "^5.1.0",
     "@fontsource/noto-naskh-arabic": "^5.1.0",
     "lucide-react": "^0.468.0",
@@ -19,6 +25,7 @@
     "react-dom": "^18.3.1"
   },
   "devDependencies": {
+    "@capacitor/cli": "^6.2.0",
     "@types/react": "^18.3.17",
     "@types/react-dom": "^18.3.5",
     "@vitejs/plugin-react": "^4.3.4",

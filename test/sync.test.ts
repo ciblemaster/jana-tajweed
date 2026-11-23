@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { emptyProgress, mergeProgress, readProgressOf, type Progress } from '../src/tajweed/progress';
+import { emptyProgress, mergeProgress, readProgressOf, streak, type Progress } from '../src/tajweed/progress';
 
 const at = (change: Partial<Progress>): Progress => ({ ...emptyProgress(), ...change });
 
@@ -39,5 +39,22 @@ describe('Putting two devices together', () => {
     const one = readProgressOf('nobody');
     one.surahs[1] = { listen: true };
     expect(readProgressOf('someone').surahs).toEqual({});
+  });
+});
+
+describe('Gentle streaks', () => {
+  const now = new Date('2026-11-23T12:00:00Z');
+  const days = (...d: string[]) => at({ days: d.map((x) => `2026-11-${x}`) });
+  it('counts the days in a row, ending today or yesterday', () => {
+    expect(streak(days('21', '22', '23'), now)).toBe(3);
+    expect(streak(days('21', '22'), now)).toBe(2);
+    expect(streak(days('20', '21'), now)).toBe(0);
+  });
+  it('forgives one missed day a week, but not two', () => {
+    expect(streak(days('19', '20', '22', '23'), now)).toBe(4);
+    expect(streak(days('17', '18', '20', '22', '23'), now)).toBe(3);
+    expect(streak(days('17', '18', '19', '20', '21', '22', '23'), now)).toBe(7);
+    expect(streak(days('10', '12', '13', '14', '15', '16', '17', '18', '20', '21', '22', '23'), now)).toBe(12);
+    expect(streak(days('19', '23'), now)).toBe(1);
   });
 });

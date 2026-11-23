@@ -1,7 +1,8 @@
-import { Cloud, RefreshCw } from 'lucide-react';
-import { useState, type FormEvent } from 'react';
+import { Cloud, RefreshCw, Sparkles } from 'lucide-react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { APP_TEXT as A } from '../core/appTexts';
 import { fill, useLang, useText } from '../core/lang';
+import { setVoiceOn, voiceAvailable, voiceOn } from './voice';
 import { ApiError, deleteAccount, readAccount, signIn, signOut, signUp, sync } from './sync';
 
 const ERRORS: Record<string, keyof typeof A> = {
@@ -22,6 +23,15 @@ export function AccountPanel({ onSynced }: { onSynced: () => void }) {
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<keyof typeof A | null>(null);
+  const [voice, setVoice] = useState(voiceOn);
+  const [canVoice, setCanVoice] = useState(false);
+  useEffect(() => {
+    if (account) void voiceAvailable().then(setCanVoice);
+  }, [account]);
+  const toggleVoice = () => {
+    setVoiceOn(!voice);
+    setVoice(!voice);
+  };
 
   const run = async (work: () => Promise<unknown>) => {
     setBusy(true);
@@ -60,8 +70,16 @@ export function AccountPanel({ onSynced }: { onSynced: () => void }) {
             <RefreshCw size={18} strokeWidth={2.5} aria-hidden /> {tx(busy ? A.syncing : A.syncNow)}
           </button>
           {error && <p className="jp-note jaccount-error" role="alert">{tx(A[error])}</p>}
+          {canVoice && (
+            <div className="jaccount-voice">
+              <h3><Sparkles size={20} strokeWidth={2.5} aria-hidden /> {tx(A.voiceTitle)}</h3>
+              <p className="jp-note">{tx(A.voiceWhy)}</p>
+              {voice && <p className="jp-note"><b>{tx(A.voiceIsOn)}</b></p>}
+              <button className={voice ? 'tj-pill' : 'tj-pill tj-pill-go'} type="button" aria-pressed={voice} onClick={toggleVoice} style={{ justifyContent: 'center' }}>{tx(voice ? A.voiceOff : A.voiceOn)}</button>
+            </div>
+          )}
           <div className="jaccount-row">
-            <button className="tj-pill" type="button" disabled={busy} onClick={() => void run(signOut)}>{tx(A.signOut)}</button>
+            <button className="tj-pill" type="button" disabled={busy} onClick={() => void run(async () => { setVoiceOn(false); setVoice(false); await signOut(); })}>{tx(A.signOut)}</button>
             <button className="jaccount-danger" type="button" disabled={busy} onClick={remove}>{tx(A.deleteAccount)}</button>
           </div>
         </>

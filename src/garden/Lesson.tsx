@@ -1,6 +1,6 @@
 import { ArrowLeft, Check, Medal, Mic, Play, RotateCcw, Square, Star, User, Volume2 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
-import { tajweedLetterAt, type TajweedLetter, type TajweedRule } from '../core';
+import { tajweedLetterAt, type TajweedLetter, type TajweedRule, type TajweedTimeline } from '../core';
 import { APP_TEXT as A } from '../core/appTexts';
 import { ensureFonts, fontStack } from '../core/fonts';
 import { fill, useLang, useText } from '../core/lang';
@@ -27,7 +27,7 @@ const TAIL_MS = 120;
 const PASS_SHARE = 0.8;
 
 /** The words a lesson plays: one recording, and the letter being said while a word plays. */
-export function useWords(examples: Examples | null, slow: boolean) {
+export function useWords(examples: { timeline: TajweedTimeline } | null, slow: boolean) {
   const [now, setNow] = useState(-1);
   const [playingWord, setPlayingWord] = useState<ExampleWord | null>(null);
   const timeline = examples?.timeline;

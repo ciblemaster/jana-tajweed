@@ -128,3 +128,21 @@
 .jaccount-switch, .jaccount-danger { border: 0; background: none; font: inherit; font-weight: 800; cursor: pointer; text-decoration: underline; color: var(--tj-mute); }
 .jaccount-danger { color: #c0392b; }
 .jaccount-error { color: #c0392b; }
+
+/* Level 0: letters and sounds */
+.jg-hero-letters { font-family: var(--tj-mushaf, serif); font-size: 26px; line-height: 1; }
+.jg-alphabet { display: grid; inline-size: 100%; align-self: stretch; justify-self: stretch; grid-template-columns: repeat(auto-fill, minmax(52px, 1fr)); gap: 8px; margin-block: 12px; }
+.jg-abc { block-size: 56px; border: 3px solid var(--tj-edge); border-radius: 16px; background: #fff; font: inherit; font-size: 30px; line-height: 1; cursor: pointer; }
+.jg-abc[aria-pressed='true'] { border-color: var(--rule); background: color-mix(in srgb, var(--rule) 14%, #fff); }
+.jg-abc:disabled { opacity: 0.35; cursor: default; }
+.jg-zones { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.jg-zone { display: grid; justify-items: center; gap: 4px; padding: 10px 6px; border: 3px solid var(--tj-edge); border-radius: 18px; background: #fff; font: inherit; font-weight: 800; cursor: pointer; }
+.jg-zone[data-zone='throat'] { --zone: #8e5bd6; }
+.jg-zone[data-zone='tongue'] { --zone: #e5533d; }
+.jg-zone[data-zone='lips'] { --zone: #e0418f; }
+.jg-zone[data-state='right'] { border-color: var(--tj-go); background: #e6f8ee; }
+.jg-zone[data-state='wrong'] { border-color: #c0392b; background: #fdecea; animation: jg-shake 0.4s; }
+.jg-mark-chip { gap: 10px; }
+.jg-mark-shape { font-size: 34px; line-height: 1.2; }
+.jaccount-voice { display: grid; gap: 8px; padding: 12px; border-radius: 16px; background: #fffaf0; }
+.jaccount-voice h3 { display: flex; align-items: center; gap: 6px; margin: 0; font-size: 1rem; }

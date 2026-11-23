@@ -1,0 +1,207 @@
+{
+ "about": "What the MMS aligner (scripts/tajweed/serve.py) heard for the letters of 112:1 in three clips: the sheikh reciting it, the sheikh reciting 112:2 instead, and 3 s of silence. Measured on 2026-11-23.",
+ "letters": [
+  {
+   "text": "قُ",
+   "rule": "heavy",
+   "word": 0
+  },
+  {
+   "text": "لۡ",
+   "rule": null,
+   "word": 0
+  },
+  {
+   "text": "هُ",
+   "rule": null,
+   "word": 1
+  },
+  {
+   "text": "وَ",
+   "rule": null,
+   "word": 1
+  },
+  {
+   "text": "ٱ",
+   "rule": "silent",
+   "word": 2
+  },
+  {
+   "text": "ل",
+   "rule": null,
+   "word": 2
+  },
+  {
+   "text": "لَّ",
+   "rule": "madd2",
+   "word": 2
+  },
+  {
+   "text": "هُ",
+   "rule": null,
+   "word": 2
+  },
+  {
+   "text": "أَ",
+   "rule": null,
+   "word": 3
+  },
+  {
+   "text": "حَ",
+   "rule": null,
+   "word": 3
+  },
+  {
+   "text": "دٌ",
+   "rule": "qalqalah",
+   "word": 3
+  }
+ ],
+ "sheikh": [
+  {
+   "startMs": 80,
+   "endMs": 181,
+   "score": 0.46
+  },
+  {
+   "startMs": 321,
+   "endMs": 341,
+   "score": 0.6
+  },
+  {
+   "startMs": 542,
+   "endMs": 622,
+   "score": 0.94
+  },
+  {
+   "startMs": 803,
+   "endMs": 903,
+   "score": 0.88
+  },
+  null,
+  null,
+  {
+   "startMs": 1264,
+   "endMs": 1385,
+   "score": 0.68
+  },
+  {
+   "startMs": 1746,
+   "endMs": 1846,
+   "score": 0.96
+  },
+  {
+   "startMs": 2087,
+   "endMs": 2107,
+   "score": 0.95
+  },
+  {
+   "startMs": 2228,
+   "endMs": 2368,
+   "score": 0.54
+  },
+  {
+   "startMs": 2529,
+   "endMs": 2549,
+   "score": 0.93
+  }
+ ],
+ "wrongVerse": [
+  {
+   "startMs": 0,
+   "endMs": 40,
+   "score": 0.0
+  },
+  {
+   "startMs": 40,
+   "endMs": 60,
+   "score": 0.0
+  },
+  {
+   "startMs": 60,
+   "endMs": 120,
+   "score": 0.01
+  },
+  {
+   "startMs": 120,
+   "endMs": 240,
+   "score": 0.25
+  },
+  null,
+  null,
+  {
+   "startMs": 621,
+   "endMs": 782,
+   "score": 0.98
+  },
+  {
+   "startMs": 1062,
+   "endMs": 1222,
+   "score": 0.82
+  },
+  {
+   "startMs": 1703,
+   "endMs": 1723,
+   "score": 0.95
+  },
+  {
+   "startMs": 1824,
+   "endMs": 1964,
+   "score": 0.14
+  },
+  {
+   "startMs": 2044,
+   "endMs": 2064,
+   "score": 0.98
+  }
+ ],
+ "silence": [
+  {
+   "startMs": 0,
+   "endMs": 40,
+   "score": 0.0
+  },
+  {
+   "startMs": 40,
+   "endMs": 60,
+   "score": 0.01
+  },
+  {
+   "startMs": 60,
+   "endMs": 141,
+   "score": 0.01
+  },
+  {
+   "startMs": 181,
+   "endMs": 221,
+   "score": 0.02
+  },
+  null,
+  null,
+  {
+   "startMs": 2738,
+   "endMs": 2779,
+   "score": 0.02
+  },
+  {
+   "startMs": 2779,
+   "endMs": 2839,
+   "score": 0.01
+  },
+  {
+   "startMs": 2919,
+   "endMs": 2940,
+   "score": 0.03
+  },
+  {
+   "startMs": 2940,
+   "endMs": 2980,
+   "score": 0.02
+  },
+  {
+   "startMs": 2980,
+   "endMs": 3000,
+   "score": 0.01
+  }
+ ]
+}
