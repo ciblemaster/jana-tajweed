@@ -456,3 +456,11 @@ a.tj-pill { text-decoration: none; }
 
 /* Jana Tajweed: the language picker on the path. */
 .tj-lang { block-size: 44px; padding: 0 12px; border: 2px solid var(--tj-edge); border-radius: 999px; background: var(--tj-card); color: var(--tj-ink); font: inherit; font-weight: 700; }
+
+/* Recording the child's turn and comparing it with the sheikh. */
+.tj-rec-dot { display: inline-block; inline-size: 12px; block-size: 12px; margin-inline-end: 8px; border-radius: 50%; background: #e03131; vertical-align: middle; animation: tj-rec 1s ease-in-out infinite alternate; }
+@keyframes tj-rec { from { opacity: 1; } to { opacity: 0.3; } }
+@media (prefers-reduced-motion: reduce) { .tj-rec-dot { animation: none; } }
+.tj-hear[aria-pressed='true'] { background: var(--tj-go); color: #fff; }
+.tj-record svg { flex: none; }
+.tj-mic-off { margin: 8px auto 0; max-inline-size: 420px; padding: 10px 14px; border-radius: 16px; background: #fff0f0; color: #a61e1e; font-weight: 700; text-align: center; }
