@@ -84,7 +84,9 @@ export function beatOf(letters: CheckLetter[], heard: Heard[]): number {
   if (spans.length >= 2) return Math.min(700, Math.max(120, median(spans)));
   const said = heard.filter(Boolean) as NonNullable<Heard>[];
   if (said.length < 2) return 300;
-  return Math.min(700, Math.max(120, (said[said.length - 1].endMs - said[0].startMs) / said.length));
+  // Too few for that in a short verse: the whole recitation over its counts, a held sound taking all of its own.
+  const counts = said.length + letters.reduce((sum, _, i) => sum + Math.max(0, (wantedCounts(letters, i) ?? 1) - 1), 0);
+  return Math.min(700, Math.max(120, (said[said.length - 1].endMs - said[0].startMs) / counts));
 }
 
 /** How many counts a held letter lasted, or null when it cannot be measured. */
@@ -96,11 +98,14 @@ export function heldCounts(letters: CheckLetter[], heard: Heard[], i: number, be
     const before = prevHeard(heard, i);
     if (!before) return null;
     const after = nextHeard(heard, i);
+    // Measured between two letters the aligner placed: one it barely heard may sit anywhere, so it measures nothing.
+    if (before.h.score < UNSURE || (after && after.score < UNSURE)) return null;
     const end = after ? after.startMs : before.h.endMs;
     return (end - before.h.startMs) / beatMs;
   }
   if (HUM.includes(rule) && heard[i]) {
     const after = nextHeard(heard, i);
+    if (heard[i]!.score < UNSURE || (after && after.score < UNSURE)) return null;
     return ((after ? after.startMs : heard[i]!.endMs) - heard[i]!.startMs) / beatMs;
   }
   return null;

@@ -71,6 +71,34 @@ describe('Voice feedback (timing)', () => {
   });
 });
 
+describe('Voice feedback (held sounds the aligner cannot measure)', () => {
+  it('does not measure a long vowel against a letter the aligner barely heard', () => {
+    // ٱلَّذِي يُوَسۡوِسُ as the aligner heard the sheikh: ذِ placed with a score of 0.03, right before يُ.
+    const v: CheckLetter[] = [L('ٱ', 0), L('لَّ', 0), L('ذِ', 0), L('ي', 0, 'madd2'), L('يُ', 1), L('وَ', 1), L('سۡ', 1), L('وِ', 1), L('سُ', 1)];
+    const heard: Heard[] = [
+      { startMs: 200, endMs: 580, score: 0.91 }, { startMs: 580, endMs: 840, score: 0.62 }, { startMs: 840, endMs: 940, score: 0.03 }, null,
+      { startMs: 940, endMs: 1620, score: 0.6 }, { startMs: 1620, endMs: 1860, score: 0.6 }, { startMs: 1860, endMs: 2100, score: 0.82 },
+      { startMs: 2100, endMs: 2360, score: 0.6 }, { startMs: 2360, endMs: 2600, score: 0.6 }
+    ];
+    expect(judgeRecitation(v, heard).tip).toEqual({ kind: 'great' });
+    // The same short madd between two letters it is sure of is still pointed out.
+    heard[2] = { ...heard[2]!, score: 0.8 };
+    expect(judgeRecitation(v, heard).tip).toEqual({ kind: 'hold', word: 0, rule: 'madd2', counts: 2 });
+  });
+
+  it('finds the pace of a short verse from its counts, held sounds included', () => {
+    // إِلَـٰهِ ٱلنَّاسِ by the sheikh: one short-vowel span only, so the beat comes from the whole verse.
+    const v: CheckLetter[] = [L('إِ', 0), L('لَ', 0), L('ـٰ', 0, 'madd2'), L('هِ', 0), L('ٱ', 1, 'silent'), L('ل', 1, 'shamsi'), L('نَّ', 1, 'ghunnah'), L('ا', 1, 'madd4'), L('سِ', 1)];
+    const heard: Heard[] = [
+      { startMs: 221, endMs: 241, score: 0.67 }, { startMs: 342, endMs: 483, score: 0.71 }, null, { startMs: 804, endMs: 925, score: 0.62 }, null, null,
+      { startMs: 1749, endMs: 1910, score: 0.6 }, null, { startMs: 2413, endMs: 2433, score: 0.63 }
+    ];
+    const r = judgeRecitation(v, heard);
+    expect(r.beatMs).toBeCloseTo(2212 / 8, 0);
+    expect(r.tip).toEqual({ kind: 'great' });
+  });
+});
+
 describe('Voice feedback (real aligner output)', () => {
   const { letters, sheikh, wrongVerse, silence } = fixture as { letters: CheckLetter[]; sheikh: Heard[]; wrongVerse: Heard[]; silence: Heard[] };
 
