@@ -1,6 +1,8 @@
-import { buildTajweedTimeline, HELD_COUNTS, TAJWEED_RULES, type TajweedLetter, type TajweedPass, type TajweedRule } from '../core';
-import { AudioLines, Combine, Drum, EyeOff, Merge, Moon, RefreshCw, Sparkles, Sun, VolumeX, Weight, type LucideIcon } from 'lucide-react';
+import { buildTajweedTimeline, TAJWEED_RULES, type TajweedLetter, type TajweedPass, type TajweedRule } from '../core';
 import { currentSurah } from './current';
+import { letterInWord, RuleMark, soloText } from './letters';
+
+export { RuleMark, soloText };
 import { modeFromUrl, trialFromUrl, type Trial } from './surahs';
 
 // Everything here is built once, from the surah handed over before this module is loaded (see current.ts). The page
@@ -93,34 +95,6 @@ export function lastWordEndedBy(ms: number): number {
   return found;
 }
 
-const ICONS: Partial<Record<TajweedRule, LucideIcon>> = {
-  shamsi: Sun, qamari: Moon, silent: VolumeX, izhar: Sparkles, heavy: Weight, ghunnah: AudioLines, ikhfa: EyeOff, qalqalah: Drum,
-  idghamg: Combine, idgham: Merge, iqlab: RefreshCw
-};
-
-/** A rule's picture: an icon, or the count for a madd. */
-export function RuleMark({ rule, size = 18 }: { rule: TajweedRule; size?: number }) {
-  const Icon = ICONS[rule];
-  if (Icon) return <Icon size={size} strokeWidth={2.5} aria-hidden />;
-  return <span className="tj-count" style={{ fontSize: size }}>{HELD_COUNTS[rule]}</span>;
-}
-
-/**
- * A letter on its own. A long vowel written as a small alef needs a line to sit on, and a yeh keeps the shape it has
- * inside its word: alone, the mushaf writes it without its dots.
- */
-export function soloText(letter: TajweedLetter): string {
-  if (letter.text === '\u0670') return '\u0640\u0670';
-  if (letter.text.startsWith('\u064A')) return `\u200D${letter.text}\u200D`;
-  return letter.text;
-}
-
-/**
- * A letter as drawn inside its word. The mushaf face fuses a long yeh with the letter after it into one shape, which
- * would then take one colour; a joiner after the yeh keeps the two letters joined but separate, each with its own.
- */
 export function shownText(letter: TajweedLetter): string {
-  const next = TIMELINE.letters[letter.index + 1];
-  const sameWord = next && next.verse === letter.verse && next.word === letter.word;
-  return letter.text === '\u064A' && sameWord ? `${letter.text}\u200D` : letter.text;
+  return letterInWord(TIMELINE, letter);
 }

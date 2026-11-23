@@ -24,6 +24,7 @@ const KEY = 'jana-tajweed-lang';
 
 /** ?lang= first, then the last choice on this device, then the browser's language, then English. */
 function initialLang(): Lang {
+  if (typeof window === 'undefined') return 'en';
   const asked = new URLSearchParams(window.location.search).get('lang');
   if (isLang(asked)) return asked;
   try {
@@ -40,6 +41,7 @@ let current: Lang = initialLang();
 const listeners = new Set<() => void>();
 
 function apply(lang: Lang) {
+  if (typeof document === 'undefined') return;
   document.documentElement.lang = lang;
   document.documentElement.dir = langDir(lang);
 }

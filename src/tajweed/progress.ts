@@ -1,3 +1,4 @@
+import { progressKey } from '../profiles/profiles';
 import { GAME_SURAHS } from './surahs';
 
 /** The three stars of a surah: followed to the end, recited on every turn, recited from memory. */
@@ -10,17 +11,18 @@ export interface Progress {
   days: string[];
   /** The awards already shown, so a new one is announced once. */
   seen: string[];
+  /** The Rule Garden: each level finished, and the best challenge score (0 to 1). */
+  garden: Record<string, { done?: boolean; best?: number }>;
   /** For the grown-up testing the game: every surah open. */
   unlockAll?: boolean;
 }
 
-const KEY = 'qvm-tajweed-game';
-const EMPTY: Progress = { surahs: {}, days: [], seen: [] };
+const EMPTY: Progress = { surahs: {}, days: [], seen: [], garden: {} };
 
 /** Kept on this device only; a private window that refuses storage still plays, without remembering. */
 export function readProgress(): Progress {
   try {
-    const raw = localStorage.getItem(KEY);
+    const raw = localStorage.getItem(progressKey());
     return raw ? { ...EMPTY, ...(JSON.parse(raw) as Progress) } : { ...EMPTY };
   } catch {
     return { ...EMPTY };
@@ -29,7 +31,7 @@ export function readProgress(): Progress {
 
 export function writeProgress(progress: Progress) {
   try {
-    localStorage.setItem(KEY, JSON.stringify(progress));
+    localStorage.setItem(progressKey(), JSON.stringify(progress));
   } catch {
     // Nothing to do: the game goes on in memory.
   }
@@ -106,3 +108,18 @@ export function awards(progress: Progress): Award[] {
 }
 
 export const won = (award: Award) => award.have >= award.need;
+
+/** Notes that the child played today. */
+function playedToday(progress: Progress) {
+  if (progress.days[progress.days.length - 1] !== today()) progress.days = [...progress.days, today()].slice(-60);
+}
+
+/** Records a Rule Garden challenge: the level is done once a challenge is passed. Returns the new progress. */
+export function earnLevel(level: string, score: number, passed: boolean): Progress {
+  const progress = readProgress();
+  const had = progress.garden[level] ?? {};
+  progress.garden = { ...progress.garden, [level]: { done: had.done || passed, best: Math.max(had.best ?? 0, score) } };
+  playedToday(progress);
+  writeProgress(progress);
+  return progress;
+}

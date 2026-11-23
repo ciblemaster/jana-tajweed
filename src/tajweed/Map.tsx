@@ -1,10 +1,16 @@
-import { Brain, Flame, Lock, Medal, Play, Star, Trophy, X } from 'lucide-react';
+import { Brain, Flame, Lock, Medal, Play, Sprout, Star, Trophy, X } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { ensureFonts, fontStack } from '../core/fonts';
 import { fill, LANG_NAMES, LANGS, setLang, useLang, useText, type Lang } from '../core/lang';
 import { AWARD_TEXT, TAJWEED_TEXT as T } from '../core/texts';
 import { awards, isOpen, nextUp, readProgress, STARS, starsOf, streak, totalStars, won, writeProgress, type Star as StarKind } from './progress';
-import { GAME_SURAHS, gameUrl, surahName, type SurahInfo } from './surahs';
+import { GAME_SURAHS, gameUrl, lessonUrl, profilesUrl, surahName, type SurahInfo } from './surahs';
+import { APP_TEXT as A } from '../core/appTexts';
+import { LEVELS, levelOpen } from '../garden/levels';
+import { Avatar } from '../profiles/Avatar';
+import { currentProfile } from '../profiles/profiles';
+import { RuleMark } from './letters';
+import '../garden/garden.css';
 import { DISPLAY_FONT } from './theme';
 import './tajweed.css';
 
@@ -34,7 +40,8 @@ export default function TajweedMap() {
   useEffect(() => {
     void ensureFonts([DISPLAY_FONT]);
     document.title = tx(T.title);
-    upNextStone.current?.scrollIntoView({ block: 'center' });
+    // Once the journey has started, the path opens on the next surah; before that, on the garden at the top.
+    if (Object.keys(progress.surahs).length) upNextStone.current?.scrollIntoView({ block: 'center' });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
@@ -67,6 +74,8 @@ export default function TajweedMap() {
   const done = GAME_SURAHS.filter((s) => progress.surahs[s.n]?.listen).length;
   const pickedAt = picked ? GAME_SURAHS.findIndex((s) => s.n === picked.n) : -1;
   const pickedOpen = picked ? isOpen(progress, picked.n) : false;
+  const kid = currentProfile();
+  const nextLevel = LEVELS.find((l) => l.rules.length && !progress.garden[l.id]?.done)?.id;
 
   return (
     <div className="tj tj-map" style={{ '--tj-display': fontStack(DISPLAY_FONT) } as CSSProperties}>
@@ -75,6 +84,7 @@ export default function TajweedMap() {
           <h1>{tx(T.title)}</h1>
           <p>{tx(T.map)} · {done} / {GAME_SURAHS.length}</p>
         </div>
+        {kid && <a className="tj-kid-btn" href={profilesUrl()} aria-label={tx(A.switchChild)}><Avatar kind={kid.avatar} size={22} />{kid.name}</a>}
         <select className="tj-lang" value={lang} onChange={(e) => setLang(e.target.value as Lang)} aria-label="Language">
           {LANGS.map((l) => <option key={l} value={l}>{LANG_NAMES[l]}</option>)}
         </select>
@@ -83,6 +93,31 @@ export default function TajweedMap() {
           <span className="tj-score-chip tj-score-days" title={tx(T.daysInRow)}><Flame size={20} strokeWidth={2.5} aria-hidden /><b>{streak(progress)}</b><span className="tj-sr">{tx(T.daysInRow)}</span></span>
         </div>
       </header>
+
+      <section className="jg-garden" aria-labelledby="jg-garden-title">
+        <h2 id="jg-garden-title"><Sprout size={20} strokeWidth={2.5} aria-hidden />{tx(A.garden)}</h2>
+        <p>{tx(A.gardenHint)}</p>
+        <ol className="jg-levels">
+          {LEVELS.map((l, i) => {
+            const open = levelOpen(progress.garden, l.id, progress.unlockAll);
+            const doneLevel = progress.garden[l.id]?.done;
+            const face = (
+              <>
+                <span className="jg-hero" data-rule={l.colour}>{l.rules.length ? <RuleMark rule={l.colour} size={26} /> : <Lock size={24} strokeWidth={2.5} />}</span>
+                <span>{tx(l.name)}</span>
+                <small>{doneLevel ? <Star size={16} fill="currentColor" strokeWidth={0} className="jg-level-star" aria-label="★" /> : !l.rules.length ? tx(A.soon) : !open ? tx(A.locked) : fill(tx(A.level), { n: i + 1 })}</small>
+              </>
+            );
+            return (
+              <li key={l.id}>
+                {open
+                  ? <a className={['jg-level', l.id === nextLevel ? 'is-next' : ''].join(' ')} href={lessonUrl(l.id)} data-rule={l.colour}>{face}</a>
+                  : <span className="jg-level" aria-disabled="true" data-rule={l.colour}>{face}</span>}
+              </li>
+            );
+          })}
+        </ol>
+      </section>
 
       <section className="tj-shelf" aria-labelledby="tj-shelf-title">
         <h2 id="tj-shelf-title"><Medal size={20} strokeWidth={2.5} aria-hidden />{tx(T.awards)}</h2>
@@ -113,6 +148,7 @@ export default function TajweedMap() {
         )}
       </section>
 
+      <h2 className="jg-section-title">{tx(A.surahPath)}</h2>
       <main className="tj-path" id="main" style={{ blockSize: height }}>
         <svg className="tj-trail" viewBox={`0 0 100 ${height}`} preserveAspectRatio="none" aria-hidden>
           <path d={line} />

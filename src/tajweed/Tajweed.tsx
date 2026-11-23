@@ -10,6 +10,7 @@ import { ayahOf, AYAHS, DISPLAY_FONT, HAS_CHILDREN, lastWordEndedBy, leadRule, M
 import { GAME_SURAHS, gameUrl, surahInfo, surahName } from './surahs';
 import { useRecitation } from './useRecitation';
 import { useRecorder } from './useRecorder';
+import { bandRules, currentProfile } from '../profiles/profiles';
 import './tajweed.css';
 
 /** Slow enough for a child to follow each letter; the browser keeps the sheikh's pitch. */
@@ -50,7 +51,7 @@ export default function Tajweed() {
   /** The last letter recited; the board shows the letters of its verse up to it. */
   const [reached, setReached] = useState(-1);
   const [started, setStarted] = useState(false);
-  const [slow, setSlow] = useState(false);
+  const [slow, setSlow] = useState(() => bandRules(currentProfile()?.band).slow);
   const [stops, setStops] = useState(false);
   const [completed, setCompleted] = useState(NONE_DONE);
   const [finished, setFinished] = useState(false);
