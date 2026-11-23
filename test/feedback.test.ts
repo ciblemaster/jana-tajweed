@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { beatOf, judgeRecitation, type CheckLetter, type Heard } from '../src/core/tajweed/feedback';
+import { beatOf, judgeRecitation, wantedCounts, type CheckLetter, type Heard } from '../src/core/tajweed/feedback';
+import fixture from './fixtures/voice-112-1.json';
 
 // قُلْ هُوَ ٱللَّهُ أَحَدٌ, simplified: each letter with the times a child might say it.
 const L = (text: string, word: number, rule: CheckLetter['rule'] = null): CheckLetter => ({ text, word, rule });
@@ -55,7 +56,35 @@ describe('Voice feedback (timing)', () => {
   });
 
   it('calls a word almost when the aligner is unsure of it', () => {
-    expect(judgeRecitation(verse, recite(300, 2, 0.4)).words).toEqual(['almost', 'almost', 'almost', 'almost']);
+    expect(judgeRecitation(verse, recite(300, 2, 0.3)).words).toEqual(['almost', 'almost', 'almost', 'almost']);
+  });
+
+  it('takes 2 counts for a long vowel before the last letter, where the reciter stops', () => {
+    // ٱلنَّاسِ at the end of a verse: madd 'arid lil-sukun may be held 2, 4 or 6 counts.
+    const end: CheckLetter[] = [L('مَ', 0), L('لِ', 0), L('كِ', 0), L('نَّ', 1, 'ghunnah'), L('ا', 1, 'madd4'), L('سِ', 1)];
+    const heard: Heard[] = [
+      { startMs: 0, endMs: 200, score: 0.9 }, { startMs: 250, endMs: 450, score: 0.9 }, { startMs: 500, endMs: 700, score: 0.9 },
+      { startMs: 750, endMs: 1200, score: 0.9 }, null, { startMs: 1250, endMs: 1400, score: 0.9 }
+    ];
+    expect(wantedCounts(end, 4)).toBe(2);
+    expect(judgeRecitation(end, heard).tip).toEqual({ kind: 'great' });
+  });
+});
+
+describe('Voice feedback (real aligner output)', () => {
+  const { letters, sheikh, wrongVerse, silence } = fixture as { letters: CheckLetter[]; sheikh: Heard[]; wrongVerse: Heard[]; silence: Heard[] };
+
+  it('is happy with the sheikh reciting the verse', () => {
+    const r = judgeRecitation(letters, sheikh);
+    expect(r.words).toEqual(['good', 'good', 'good', 'good']);
+    expect(r.tip).toEqual({ kind: 'great' });
+    expect(r.beatMs).toBeGreaterThan(150);
+    expect(r.beatMs).toBeLessThan(600);
+  });
+
+  it('asks to say again the words of another verse, and everything in silence', () => {
+    expect(judgeRecitation(letters, wrongVerse).tip).toEqual({ kind: 'say', word: 0 });
+    expect(judgeRecitation(letters, silence).words).toEqual(['again', 'again', 'again', 'again']);
   });
 
   it('measures the hum of a hidden noon until the next sound', () => {

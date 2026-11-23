@@ -31,11 +31,24 @@ export interface VoiceResult {
   beatMs: number;
 }
 
-/** A word is clear above this certainty, and almost there above the next. */
-export const CLEAR = 0.55;
-export const UNSURE = 0.25;
-/** A held sound is too short below this share of its counts: it is then hardly longer than a short vowel. */
-export const HOLD_SHARE = 0.65;
+/**
+ * A word is clear above this certainty, and almost there above the next. Measured on 6 surahs (37 verses) with the MMS
+ * aligner: Sheikh Al-Minshawi's own words score 0.64 in the middle, and 0.40 keeps 94% of them clear; the children
+ * repeating after him score 0.45 in the middle. Words of the wrong verse score 0.22 in the middle, and below 0.20 a
+ * word is almost never one that was said right (no sheikh verse, 25% of the children's, 75% of wrong verses).
+ */
+export const CLEAR = 0.4;
+export const UNSURE = 0.2;
+/**
+ * A long vowel is too short below this share of its counts. One count where two are due is a share of 0.5; the
+ * sheikh's shortest measured hold was 0.63 once the stop at a verse end is counted as 2.
+ */
+export const HOLD_SHARE = 0.55;
+/**
+ * The hum of a noon or meem measures short: the aligner starts the next letter while the hum is still going, so the
+ * sheikh's 2 counts measure 1 to 1.2 at times (a share of 0.33 to 0.6). Only a hum hardly there at all is pointed out.
+ */
+export const HUM_SHARE = 0.3;
 
 const SHORT_VOWELS = /[َُِ]/;
 const MADD: TajweedRule[] = ['madd2', 'madd4', 'madd5', 'madd6'];
@@ -68,7 +81,7 @@ export function beatOf(letters: CheckLetter[], heard: Heard[]): number {
     if (letters[i + 1].rule && MADD.includes(letters[i + 1].rule!)) return;
     spans.push(next.startMs - h.startMs);
   });
-  if (spans.length >= 3) return Math.min(700, Math.max(120, median(spans)));
+  if (spans.length >= 2) return Math.min(700, Math.max(120, median(spans)));
   const said = heard.filter(Boolean) as NonNullable<Heard>[];
   if (said.length < 2) return 300;
   return Math.min(700, Math.max(120, (said[said.length - 1].endMs - said[0].startMs) / said.length));
@@ -93,6 +106,18 @@ export function heldCounts(letters: CheckLetter[], heard: Heard[], i: number, be
   return null;
 }
 
+/**
+ * How many counts a letter should be held. A long vowel before the last letter of a verse is held 2, 4 or 6 counts
+ * when the reciter stops there (madd 'arid lil-sukun), so 2 is enough: the sheikh holds ٱلۡعَٰلَمِينَ and ٱلنَّاسِ
+ * about 2.4 counts.
+ */
+export function wantedCounts(letters: CheckLetter[], i: number): number | undefined {
+  const rule = letters[i].rule;
+  const want = rule ? HELD_COUNTS[rule] : undefined;
+  if (want && MADD.includes(rule!) && i === letters.length - 2) return Math.min(want, 2);
+  return want;
+}
+
 export function judgeRecitation(letters: CheckLetter[], heard: Heard[]): VoiceResult {
   const count = letters.length ? Math.max(...letters.map((l) => l.word)) + 1 : 0;
   const beatMs = beatOf(letters, heard);
@@ -106,10 +131,10 @@ export function judgeRecitation(letters: CheckLetter[], heard: Heard[]): VoiceRe
 
   let hold: Tip | null = null;
   letters.forEach((l, i) => {
-    const want = l.rule ? HELD_COUNTS[l.rule] : undefined;
+    const want = wantedCounts(letters, i);
     if (!want || words[l.word] === 'again') return;
     const got = heldCounts(letters, heard, i, beatMs);
-    if (got !== null && got < want * HOLD_SHARE) {
+    if (got !== null && got < want * (HUM.includes(l.rule!) ? HUM_SHARE : HOLD_SHARE)) {
       if (words[l.word] === 'good') words[l.word] = 'almost';
       hold ??= { kind: 'hold', word: l.word, rule: l.rule!, counts: want };
     }
