@@ -66,3 +66,13 @@ export async function loadSurah(n: number, trial: Trial): Promise<TajweedSurahSo
   if (!file) throw new Error(`No data for surah ${n}`);
   return (await file()).default;
 }
+
+/** Where a level of the Rule Garden is played. */
+export function lessonUrl(level: string): string {
+  return gameUrl() + (gameUrl().includes('?') ? '&' : '?') + `lesson=${level}`;
+}
+
+/** Where the child is picked or added. */
+export function profilesUrl(): string {
+  return gameUrl() + (gameUrl().includes('?') ? '&' : '?') + 'profiles';
+}
