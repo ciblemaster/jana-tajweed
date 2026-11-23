@@ -14,21 +14,27 @@ How the aligned datasets in shared/src/tajweed were made (a trial, not part of t
     .venv/bin/python scripts/tajweed/align.py letters.json recitation.wav aligned.json
 
 letters.json is {"passes": 1 or 2, "verses": [{"ayah": 1, "words": [{"letters": [{"text": "بِ", "rule": null}]}]}]};
+a verse may also have "starts": [ms, ...], one per pass, to align each recitation only within its own part;
 scripts/tajweed/dump.ts writes it from a dataset that already exists. The first run downloads the model (1.2 GB).
 A long recording is heard in windows and then aligned in one go, so no verse times are needed beforehand.
 
 On Al-Husary's Al-Fatihah the letter starts land a median 43 ms from hand-measured ones, 86% within 100 ms. Where
 they differ most is a doubled letter after a long vowel, which the model cannot place: see HOLD_AFTER_MADD_MS.
 
-Usage: align.py <letters.json> <audio.wav> <out.json>
+With --pauses, each recitation is aligned within its own part of the recording, and the parts are cut at pauses
+(see starts_at_pauses): use it for a teaching recording where a verse came out squeezed into a breath.
+
+Usage: align.py <letters.json> <audio.wav> <out.json> [--pauses]
 """
 import json
+import math
 import sys
 
 import torch
 import torchaudio
 
 LETTERS, WAV, OUT = sys.argv[1:4]
+BY_PAUSES = '--pauses' in sys.argv
 
 from sounds import MADD, SILENT, said  # noqa: E402  (how each letter is said)
 
@@ -64,6 +70,83 @@ def voice_end(loud, after_ms, limit_ms):
             return t * 10
     window = loud[first:last]
     return (first + int(window.argmin())) * 10 if len(window) else limit_ms
+
+
+class Span:
+    def __init__(self, token, start):
+        self.token, self.start = token, start
+
+
+def aligned_in_parts(emission, tokens, owner, starts, count):
+    """Each recitation aligned only within its own part of the recording, from its start to the next one's.
+
+    In one go the model can squeeze a whole verse into a breath and slide every recitation after it along by one
+    (it did so with the children's repeat of 114:4 and 114:5), so where that happens the letters file can say when
+    each recitation starts: "starts": [sheikh, children] in ms for every verse.
+    """
+    out = []
+    for r in range(count):
+        mine = [n for n, key in enumerate(owner) if key[0] == r]
+        first = int(starts[r] // FRAME_MS)
+        last = int(starts[r + 1] // FRAME_MS) if r + 1 < count else emission.shape[1]
+        part = emission[:, first:last]
+        aligned, scores = torchaudio.functional.forced_align(part, torch.tensor([[tokens[n] for n in mine]], dtype=torch.int32), blank=0)
+        out += [Span(s.token, s.start + first) for s in torchaudio.functional.merge_tokens(aligned[0], scores[0].exp())]
+    return out
+
+
+# A pause between two recitations: the quietest moment around it, below this share of the loudest moment.
+PAUSE_LEVEL, PAUSE_MS = 0.1, 150
+PACE_WEIGHT = float(next((a.split('=')[1] for a in sys.argv if a.startswith('--pace-weight=')), 40))
+
+
+def starts_at_pauses(emission, tokens, owner, count, loud):
+    """Where each recitation starts, when every one of them has to start in a pause.
+
+    The same forced alignment as in one go (the parts' scores add up to the whole recording's), with one more rule:
+    one recitation ends and the next begins only where the voice stops. Found by dynamic programming over the pauses.
+    """
+    # The quietest moment within PAUSE_MS either side, when it is quiet enough, over 50 ms to smooth out flicker.
+    smooth = torch.nn.functional.avg_pool1d(loud.view(1, 1, -1), 5, 1, 2).view(-1)
+    reach = PAUSE_MS // 10
+    cuts = [0]
+    for t in range(reach, len(smooth) - reach):
+        if smooth[t] < PAUSE_LEVEL and smooth[t] == smooth[t - reach: t + reach + 1].min() and t * 10 - cuts[-1] > PAUSE_MS:
+            cuts.append(t * 10)
+    frames = emission.shape[1]
+    pace = frames * FRAME_MS / len(tokens)
+    mine = [[tokens[n] for n, key in enumerate(owner) if key[0] == r] for r in range(count)]
+    memo = {}
+
+    def score(r, a, b):
+        first, last = int(cuts[a] // FRAME_MS), frames if b is None else int(cuts[b] // FRAME_MS)
+        sounds = len(mine[r])
+        if (last - first) * FRAME_MS < 50 * sounds or (last - first) * FRAME_MS > 700 * sounds + 3000:
+            return None
+        if (r, a, b) not in memo:
+            _, scores = torchaudio.functional.forced_align(emission[:, first:last], torch.tensor([mine[r]], dtype=torch.int32), blank=0)
+            # The children's chorus is heard less surely than the sheikh, so the scores alone may squeeze a verse into
+            # a breath to give its time to the chorus: a recitation far from the recording's usual pace costs more.
+            memo[(r, a, b)] = float(scores.sum()) - PACE_WEIGHT * math.log((last - first) * FRAME_MS / (pace * sounds)) ** 2
+        return memo[(r, a, b)]
+
+    best = {0: (0.0, [0])}
+    for r in range(count - 1):
+        step = {}
+        for a, (total, path) in best.items():
+            for b in range(a + 1, len(cuts)):
+                got = score(r, a, b)
+                if got is None:
+                    if (cuts[b] - cuts[a]) > 700 * len(mine[r]) + 3000:
+                        break
+                    continue
+                if b not in step or total + got > step[b][0]:
+                    step[b] = (total + got, path + [b])
+        best = step
+    ends = [(total + score(count - 1, a, None), path) for a, (total, path) in best.items() if score(count - 1, a, None) is not None]
+    if not ends:
+        return None
+    return [cuts[a] for a in max(ends)[1]]
 
 
 def main():
@@ -109,8 +192,15 @@ def main():
             window, _ = model(wave[:, first * hop: (last - 1) * hop + receptive])
             heard.append(window[:, at - first: at - first + min(WINDOW, frames - at)])
     emission = torch.cat(heard, dim=1)
-    aligned, scores = torchaudio.functional.forced_align(emission, torch.tensor([tokens], dtype=torch.int32), blank=0)
-    spans = torchaudio.functional.merge_tokens(aligned[0], scores[0].exp())
+    starts = [s for verse in data['verses'] for s in verse.get('starts', [])]
+    if BY_PAUSES:
+        starts = starts_at_pauses(emission, tokens, owner, len(recitations), loud) or []
+        print('starts at pauses:', starts)
+    if starts and len(starts) == len(recitations):
+        spans = aligned_in_parts(emission, tokens, owner, starts, len(recitations))
+    else:
+        aligned, scores = torchaudio.functional.forced_align(emission, torch.tensor([tokens], dtype=torch.int32), blank=0)
+        spans = torchaudio.functional.merge_tokens(aligned[0], scores[0].exp())
     assert len(spans) == len(tokens), (len(spans), len(tokens))
     ratio = FRAME_MS
 
