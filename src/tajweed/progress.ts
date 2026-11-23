@@ -22,7 +22,8 @@ export interface Progress {
   unlockAll?: boolean;
 }
 
-const EMPTY: Progress = { surahs: {}, days: [], seen: [], garden: {}, rules: {} };
+/** A fresh empty progress each time, so one child's first stars never land in another's. */
+export const emptyProgress = (): Progress => ({ surahs: {}, days: [], seen: [], garden: {}, rules: {} });
 
 /** Kept on this device only; a private window that refuses storage still plays, without remembering. */
 export function readProgress(): Progress {
@@ -33,15 +34,20 @@ export function readProgress(): Progress {
 export function readProgressOf(id: string | undefined): Progress {
   try {
     const raw = localStorage.getItem(progressKey(id));
-    return raw ? { ...EMPTY, ...(JSON.parse(raw) as Progress) } : { ...EMPTY };
+    return raw ? { ...emptyProgress(), ...(JSON.parse(raw) as Progress) } : emptyProgress();
   } catch {
-    return { ...EMPTY };
+    return emptyProgress();
   }
 }
 
 export function writeProgress(progress: Progress) {
+  writeProgressOf(undefined, progress);
+}
+
+/** Saves a child's progress by their id, or the current child's. */
+export function writeProgressOf(id: string | undefined, progress: Progress) {
   try {
-    localStorage.setItem(progressKey(), JSON.stringify(progress));
+    localStorage.setItem(progressKey(id), JSON.stringify(progress));
   } catch {
     // Nothing to do: the game goes on in memory.
   }
@@ -185,4 +191,41 @@ export function daysThisWeek(progress: Progress): number {
     day.setDate(day.getDate() - 1);
   }
   return count;
+}
+
+const union = <T,>(a: T[] = [], b: T[] = []) => [...new Set([...a, ...b])];
+
+/**
+ * Two devices' progress for one child, put together so nothing won on either is lost: every star, every day played,
+ * every level done with the best score, and for each rule the answers of the device that has more of them
+ * (adding them up would count the same answers twice once both devices have synced).
+ */
+export function mergeProgress(a: Progress, b: Progress): Progress {
+  const surahs: Progress['surahs'] = { ...a.surahs };
+  for (const [n, stars] of Object.entries(b.surahs ?? {})) {
+    const had = surahs[Number(n)] ?? {};
+    surahs[Number(n)] = Object.fromEntries(STARS.filter((s) => had[s] || stars?.[s]).map((s) => [s, true]));
+  }
+  const garden: Progress['garden'] = { ...a.garden };
+  for (const [id, level] of Object.entries(b.garden ?? {})) {
+    const had = garden[id] ?? {};
+    garden[id] = { done: !!(had.done || level.done), best: Math.max(had.best ?? 0, level.best ?? 0) };
+  }
+  const rules: Progress['rules'] = { ...a.rules };
+  for (const [rule, stats] of Object.entries(b.rules ?? {}) as [TajweedRule, { right: number; tries: number }][]) {
+    const had = rules[rule];
+    if (!had || stats.tries > had.tries || (stats.tries === had.tries && stats.right > had.right)) rules[rule] = stats;
+  }
+  const [ma, mb] = [a.mission, b.mission];
+  const mission =
+    ma && mb && ma.day === mb.day ? { day: ma.day, review: !!(ma.review || mb.review), verse: !!(ma.verse || mb.verse) } : ma && mb ? (ma.day > mb.day ? ma : mb) : (ma ?? mb);
+  return {
+    surahs,
+    days: union(a.days, b.days).sort().slice(-60),
+    seen: union(a.seen, b.seen),
+    garden,
+    rules,
+    ...(mission ? { mission } : {}),
+    ...(a.unlockAll || b.unlockAll ? { unlockAll: true } : {})
+  };
 }

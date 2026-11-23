@@ -121,3 +121,10 @@
 .jparents-rules [data-strength='growing'] span:last-child { color: #b7791f; }
 .jparents-rules [data-strength='practise'] span:last-child { color: #c0392b; }
 .jp-gate-link { color: var(--tj-mute); font-weight: 700; }
+.jaccount h2 { display: flex; align-items: center; justify-content: center; gap: 8px; }
+.jaccount-form { display: grid; gap: 14px; }
+.jaccount-form input { inline-size: 100%; block-size: 52px; margin-block-start: 6px; padding: 0 14px; border: 3px solid var(--tj-edge); border-radius: 16px; font: inherit; font-size: 1.05rem; }
+.jaccount-row { display: flex; flex-wrap: wrap; gap: 10px; justify-content: space-between; align-items: center; }
+.jaccount-switch, .jaccount-danger { border: 0; background: none; font: inherit; font-weight: 800; cursor: pointer; text-decoration: underline; color: var(--tj-mute); }
+.jaccount-danger { color: #c0392b; }
+.jaccount-error { color: #c0392b; }

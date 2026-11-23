@@ -31,9 +31,13 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,woff2,woff,png,svg}'],
-        navigateFallback: '/index.html'
+        navigateFallback: '/index.html',
+        // The server's answers are never cached or replaced by the app's page.
+        navigateFallbackDenylist: [/^\/api\//]
       }
     })
   ],
+  // `npm run dev` here and `npm run dev` in server/: the app's /api calls go to the server.
+  server: { proxy: { '/api': 'http://localhost:8787' } },
   test: { include: ['test/**/*.test.ts'] }
 } as never);

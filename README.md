@@ -36,3 +36,33 @@ npm run build      # type check + production build in dist/
 ```
 
 Audio streams from download.quranicaudio.com. Check its terms before a public release, or host the files.
+
+## Server: accounts and sync (optional)
+
+The app works fully on one device without any server. A grown-up can create an account on the grown-ups' page
+to keep their children's progress on every phone and tablet. The server in `server/` is Node + Express + Postgres.
+
+```sh
+cd server
+npm install
+cp .env.example .env        # set DATABASE_URL and SESSION_SECRET
+export $(cat .env | xargs)
+npm run dev                 # creates its tables on start, listens on :8787
+```
+
+Then run `npm run dev` at the root as usual: Vite sends `/api` calls to the server. In production, run
+`npm run build` at the root and `NODE_ENV=production npm start` in `server/`: the server hands out the built
+app too, so the sign-in cookie stays on one site.
+
+What it keeps: the grown-up's email and a scrypt password hash, and for each child (at most five) a first name,
+animal, age group and game progress. Voice recordings never leave the device. Deleting the account deletes all of it.
+A removed child keeps only their id, so other devices remove them too.
+
+Sync runs when the app opens and when it goes to the background. Progress from both sides is merged
+(`mergeProgress` in `src/tajweed/progress.ts`), so nothing won on either device is lost.
+
+Server tests need a throwaway Postgres database:
+
+```sh
+cd server && TEST_DATABASE_URL=postgres://localhost/jana_test npm test
+```

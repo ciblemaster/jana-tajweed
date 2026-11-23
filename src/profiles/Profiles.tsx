@@ -3,6 +3,7 @@ import { useEffect, useState, type CSSProperties, type FormEvent } from 'react';
 import { APP_TEXT as A } from '../core/appTexts';
 import { ensureFonts, fontStack } from '../core/fonts';
 import { fill, LANG_NAMES, LANGS, setLang, useLang, useText, type Lang } from '../core/lang';
+import { forgetChild } from '../account/sync';
 import { gameUrl, parentsUrl } from '../tajweed/surahs';
 import { DISPLAY_FONT } from '../tajweed/theme';
 import { Avatar } from './Avatar';
@@ -41,6 +42,7 @@ export default function Profiles() {
   const remove = (id: string, who: string) => {
     if (!window.confirm(fill(tx(A.removeAsk), { name: who }))) return;
     removeProfile(id);
+    forgetChild(id);
     const left = listProfiles();
     setKids(left);
     if (!left.length) setAdding(true);

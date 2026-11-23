@@ -1,5 +1,6 @@
 import { ArrowLeft, Lock } from 'lucide-react';
 import { useEffect, useState, type CSSProperties, type FormEvent } from 'react';
+import { AccountPanel } from '../account/AccountPanel';
 import { TAJWEED_RULES } from '../core';
 import { APP_TEXT as A } from '../core/appTexts';
 import { ensureFonts, fontStack } from '../core/fonts';
@@ -125,6 +126,7 @@ export default function Parents() {
               </section>
             );
           })}
+          <AccountPanel onSynced={() => setKids(listProfiles())} />
           <p className="jp-note">{tx(A.privacyNote)}</p>
           <a className="tj-pill" href={gameUrl()} style={{ justifyContent: 'center' }}>{tx(A.backToApp)}</a>
         </main>
