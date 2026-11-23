@@ -5,7 +5,7 @@ import { APP_TEXT as A } from '../core/appTexts';
 import { ensureFonts, fontStack } from '../core/fonts';
 import { fill, useLang, useText } from '../core/lang';
 import { RULE_TEXT } from '../core/texts';
-import { bandRules, currentProfile } from '../profiles/profiles';
+import { bandRules, currentProfile } from '../profiles/store';
 import { RuleMark } from '../tajweed/letters';
 import { earnLevel, readProgress } from '../tajweed/progress';
 import { gameUrl, surahInfo, surahName } from '../tajweed/surahs';

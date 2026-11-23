@@ -8,7 +8,7 @@ import { GAME_SURAHS, gameUrl, lessonUrl, profilesUrl, surahName, type SurahInfo
 import { APP_TEXT as A } from '../core/appTexts';
 import { LEVELS, levelOpen } from '../garden/levels';
 import { Avatar } from '../profiles/Avatar';
-import { currentProfile } from '../profiles/profiles';
+import { currentProfile } from '../profiles/store';
 import { RuleMark } from './letters';
 import '../garden/garden.css';
 import { DISPLAY_FONT } from './theme';

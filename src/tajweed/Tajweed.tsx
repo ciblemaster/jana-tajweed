@@ -10,7 +10,7 @@ import { ayahOf, AYAHS, DISPLAY_FONT, HAS_CHILDREN, lastWordEndedBy, leadRule, M
 import { GAME_SURAHS, gameUrl, surahInfo, surahName } from './surahs';
 import { useRecitation } from './useRecitation';
 import { useRecorder } from './useRecorder';
-import { bandRules, currentProfile } from '../profiles/profiles';
+import { bandRules, currentProfile } from '../profiles/store';
 import './tajweed.css';
 
 /** Slow enough for a child to follow each letter; the browser keeps the sheikh's pitch. */

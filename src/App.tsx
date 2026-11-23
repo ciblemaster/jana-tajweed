@@ -1,6 +1,6 @@
 import { lazy, Suspense } from 'react';
 import { levelById } from './garden/levels';
-import { currentProfile } from './profiles/profiles';
+import { currentProfile } from './profiles/store';
 import TajweedPage from './tajweed';
 
 const Lesson = lazy(() => import('./garden/Lesson'));

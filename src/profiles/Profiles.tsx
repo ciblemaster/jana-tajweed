@@ -6,7 +6,7 @@ import { fill, LANG_NAMES, LANGS, setLang, useLang, useText, type Lang } from '.
 import { gameUrl } from '../tajweed/surahs';
 import { DISPLAY_FONT } from '../tajweed/theme';
 import { Avatar } from './Avatar';
-import { addProfile, AVATARS, BANDS, canAddProfile, chooseProfile, currentProfile, listProfiles, removeProfile, type Avatar as Kind, type Band } from './profiles';
+import { addProfile, AVATARS, BANDS, canAddProfile, chooseProfile, currentProfile, listProfiles, removeProfile, type Avatar as Kind, type Band } from './store';
 import '../tajweed/tajweed.css';
 import '../garden/garden.css';
 

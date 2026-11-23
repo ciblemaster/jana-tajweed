@@ -1,4 +1,4 @@
-import { progressKey } from '../profiles/profiles';
+import { progressKey } from '../profiles/store';
 import { GAME_SURAHS } from './surahs';
 
 /** The three stars of a surah: followed to the end, recited on every turn, recited from memory. */

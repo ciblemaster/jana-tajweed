@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { buildTajweedTimeline, FATIHA_HUSARY } from '../src/core/tajweed';
 import { makeRounds, shuffle, type Examples } from '../src/garden/examples';
 import { LEVELS, levelById, levelOpen } from '../src/garden/levels';
-import { bandRules } from '../src/profiles/profiles';
+import { bandRules } from '../src/profiles/store';
 
 const timeline = buildTajweedTimeline(FATIHA_HUSARY);
 const rules = ['shamsi', 'qamari', 'silent'] as const;
