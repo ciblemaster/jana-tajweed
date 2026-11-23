@@ -1,0 +1,458 @@
+/* Tajweed for kids: a bright clay playroom of its own, apart from the site's green and gilt. */
+.tj {
+  --tj-ink: #27304f;
+  --tj-mute: #56617f;
+  --tj-pending: #bcc5da;
+  --tj-card: #ffffff;
+  --tj-edge: #cfd8ee;
+  --tj-go: #1fae62;
+  --tj-go-top: #37cf7f;
+  --tj-go-edge: #12814a;
+  --tj-gold: #f5b301;
+  --tj-gold-edge: #c98a00;
+  --tj-focus: #3b5bdb;
+  --tj-r: 28px;
+
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  color: var(--tj-ink);
+  font-family: var(--font-ui);
+  background:
+    radial-gradient(60vmax 40vmax at 100% 0%, rgba(255, 214, 102, 0.35), transparent 60%),
+    radial-gradient(50vmax 40vmax at 0% 30%, rgba(132, 197, 255, 0.35), transparent 60%),
+    linear-gradient(180deg, #e3f2ff 0%, #efeaff 46%, #fff3d9 100%);
+  background-attachment: fixed;
+}
+.tj *, .tj-card-backdrop * { box-sizing: border-box; }
+/* Kept at no weight, so each button's own colour wins. */
+:where(.tj) button { font: inherit; color: inherit; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.tj :focus-visible, .tj-card :focus-visible { outline: 3px solid var(--tj-focus); outline-offset: 3px; }
+[dir='rtl'] .tj-flip { transform: scaleX(-1); }
+
+/* One colour per rule, with a pale ground for its chips. The madds deepen as they lengthen. */
+[data-rule='madd2'] { --rule: #e64980; --rule-soft: #ffe4ee; }
+[data-rule='madd4'] { --rule: #c026d3; --rule-soft: #fbe2ff; }
+[data-rule='madd5'] { --rule: #9333ea; --rule-soft: #f1e3ff; }
+[data-rule='madd6'] { --rule: #5b21b6; --rule-soft: #e7defb; }
+[data-rule='shamsi'] { --rule: #e58a00; --rule-soft: #fff0cf; }
+[data-rule='qamari'] { --rule: #1a8fe3; --rule-soft: #ddf0ff; }
+[data-rule='silent'] { --rule: #8d99b3; --rule-soft: #eef1f7; }
+[data-rule='izhar'] { --rule: #0e9f6e; --rule-soft: #d8f5ea; }
+[data-rule='heavy'] { --rule: #dc2626; --rule-soft: #ffe1e1; }
+[data-rule='ghunnah'] { --rule: #5b9a0a; --rule-soft: #e9f6cf; }
+[data-rule='ikhfa'] { --rule: #b45309; --rule-soft: #fbe6cc; }
+[data-rule='qalqalah'] { --rule: #0891b2; --rule-soft: #d5f3fa; }
+[data-rule='idghamg'] { --rule: #4f46e5; --rule-soft: #e2e1fd; }
+[data-rule='idgham'] { --rule: #475569; --rule-soft: #e5e9f0; }
+[data-rule='iqlab'] { --rule: #0f766e; --rule-soft: #d3f0ec; }
+
+/* Header */
+.tj-top { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 14px clamp(16px, 4vw, 36px) 4px; }
+/* The surahs to choose from; the one open is dark. */
+.tj-surahs { display: flex; gap: 8px; margin-inline-start: auto; }
+.tj-surahs .tj-pill { min-block-size: 44px; padding: 0 16px; font-size: 0.95rem; }
+.tj-surahs .tj-pill[aria-current='page'] { background: var(--tj-ink); color: #fff; box-shadow: 0 5px 0 #131a33; cursor: default; }
+.tj-heading { min-width: 0; }
+.tj-heading h1 { margin: 0; font-family: var(--tj-display); font-weight: 400; font-size: clamp(1.45rem, 2.2vw + 1rem, 2.2rem); line-height: 1.15; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.tj-heading p { margin: 2px 0 0; color: var(--tj-mute); font-size: 0.95rem; font-weight: 500; }
+.tj-tag { font-family: var(--font-ui); font-size: 0.72rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; padding: 3px 10px; border-radius: 999px; background: #fff; color: #9a5b00; box-shadow: 0 2px 0 #f0d9a8; }
+
+/* Clay buttons: a thick lower edge that the press pushes in. */
+.tj-btn {
+  flex: none; inline-size: 56px; block-size: 56px; display: grid; place-items: center; border: 0; border-radius: 50%;
+  background: var(--tj-card); color: var(--tj-ink); text-decoration: none;
+  box-shadow: 0 5px 0 var(--tj-edge), 0 12px 20px -10px rgba(52, 72, 130, 0.5);
+  transition: transform 0.12s ease-out, box-shadow 0.12s ease-out, background 0.2s;
+}
+.tj-btn:hover:not(:disabled) { background: #f6f9ff; }
+.tj-btn:active:not(:disabled), .tj-play:active, .tj-pill:active:not(:disabled) { transform: translateY(4px); box-shadow: 0 1px 0 var(--tj-edge), 0 4px 8px -6px rgba(52, 72, 130, 0.5); }
+.tj-btn:disabled { opacity: 0.45; cursor: default; }
+.tj-back { inline-size: 48px; block-size: 48px; }
+.tj-toggle[aria-pressed='true'] { background: #fff3c4; color: #7a4a00; box-shadow: 0 5px 0 #eac65a, 0 12px 20px -10px rgba(170, 120, 0, 0.5); }
+
+.tj-play {
+  flex: none; inline-size: 88px; block-size: 88px; display: grid; place-items: center; border: 0; border-radius: 50%; color: #fff;
+  background: radial-gradient(circle at 35% 28%, var(--tj-go-top), var(--tj-go) 70%);
+  box-shadow: 0 8px 0 var(--tj-go-edge), 0 18px 28px -10px rgba(18, 129, 74, 0.7), inset 0 3px 0 rgba(255, 255, 255, 0.35);
+  transition: transform 0.12s ease-out, box-shadow 0.12s ease-out;
+}
+.tj-play:hover { filter: brightness(1.05); }
+.tj-play:active { box-shadow: 0 3px 0 var(--tj-go-edge), 0 8px 12px -8px rgba(18, 129, 74, 0.7), inset 0 3px 0 rgba(255, 255, 255, 0.35); }
+/* A play triangle points the same way in every language; it sits a little right of centre to look centred. */
+.tj-play-icon { margin-left: 5px; }
+.tj-play.is-waiting { animation: tj-breathe 1s ease-in-out infinite alternate; }
+
+.tj-pill {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-block-size: 52px; padding: 0 22px; border: 0; border-radius: 999px;
+  background: var(--tj-card); font-weight: 700; font-size: 1rem;
+  box-shadow: 0 5px 0 var(--tj-edge), 0 12px 20px -10px rgba(52, 72, 130, 0.5);
+  transition: transform 0.12s ease-out, box-shadow 0.12s ease-out;
+}
+.tj-pill:disabled { opacity: 0.6; cursor: default; }
+.tj-pill-go { background: var(--tj-go); color: #fff; box-shadow: 0 5px 0 var(--tj-go-edge), 0 12px 20px -10px rgba(18, 129, 74, 0.7); }
+.tj-pill-rule { background: var(--rule-soft); box-shadow: 0 5px 0 color-mix(in srgb, var(--rule) 45%, #fff), 0 12px 20px -10px color-mix(in srgb, var(--rule) 60%, transparent); }
+
+/* Layout: the board and its controls, with the colour key beside it on a wide screen. */
+.tj-body { flex: 1; display: grid; gap: 18px; padding: 10px clamp(16px, 4vw, 36px) calc(24px + env(safe-area-inset-bottom)); inline-size: 100%; max-inline-size: 1240px; margin-inline: auto; align-content: start; }
+.tj-main { display: grid; gap: 14px; justify-items: center; min-width: 0; }
+
+/* The seven verses as stepping stones; a finished verse turns into a gold star. */
+.tj-steps { display: flex; gap: clamp(6px, 2vw, 12px); justify-content: safe center; inline-size: 100%; max-inline-size: 100%; overflow-x: auto; padding: 6px 4px 8px; scrollbar-width: none; }
+.tj-steps::-webkit-scrollbar { display: none; }
+.tj-step { flex: none; }
+.tj-step {
+  inline-size: 44px; block-size: 44px; display: grid; place-items: center; border: 0; border-radius: 50%; background: rgba(255, 255, 255, 0.75); color: var(--tj-mute);
+  font-family: var(--tj-display); font-size: 1.15rem; box-shadow: 0 3px 0 var(--tj-edge); transition: transform 0.15s ease-out, background 0.2s;
+}
+.tj-step:hover { background: #fff; }
+.tj-step.is-done { background: #fff6d6; color: var(--tj-gold-edge); box-shadow: 0 3px 0 #ecd28a; }
+.tj-step.is-current { background: var(--tj-ink); color: #fff; box-shadow: 0 3px 0 #131a33; transform: scale(1.12); }
+.tj-step.is-current.is-done { color: var(--tj-gold); }
+
+/* The board */
+.tj-board {
+  position: relative; inline-size: 100%; display: grid; grid-template-rows: 1fr auto; gap: 6px; padding: clamp(14px, 3vw, 28px) clamp(10px, 3vw, 32px) 14px;
+  border-radius: var(--tj-r); background: var(--tj-card); border: 3px solid #fff;
+  box-shadow: 0 8px 0 var(--tj-edge), 0 26px 44px -18px rgba(52, 72, 130, 0.55);
+  min-block-size: clamp(300px, 46dvh, 460px);
+}
+/* Who is reciting: the sheikh, the children after him, or the child alone. */
+.tj-who { justify-self: center; margin: 0; display: inline-flex; align-items: center; gap: 8px; min-block-size: 36px; padding: 0 14px; border-radius: 999px; background: #eef2fb; color: var(--tj-ink); font-weight: 700; font-size: 0.95rem; animation: tj-rise 0.3s cubic-bezier(0.2, 1.5, 0.4, 1) both; }
+.tj-who[data-who='children'] { background: #fff0cf; color: #7a4a00; }
+.tj-who[data-who='child'] { background: var(--tj-go); color: #fff; }
+.tj-board:has(.tj-who) { grid-template-rows: auto 1fr auto; }
+.tj-stage { position: relative; display: grid; align-items: center; --p: 0; }
+.tj-verse {
+  margin: 0; text-align: center; font-size: clamp(2.5rem, 4.4vw + 1.5rem, 5.2rem); line-height: 2.05; color: var(--tj-pending);
+  animation: tj-fade 0.35s ease-out both; font-feature-settings: normal; word-spacing: 0.12em;
+}
+.tj-word { display: inline-block; padding: 0; margin: 0; border: 0; background: none; border-radius: 16px; font: inherit; color: inherit; line-height: inherit; transition: transform 0.18s ease-out; }
+/* Only where a pointer can hover: on a touch screen the last word touched would stay lit. */
+@media (hover: hover) { button.tj-word:hover { background: #f3f6fd; } }
+.tj-word.is-saying { transform: translateY(-3px) scale(1.05); }
+
+/* A letter waits pale, then takes ink or the colour of its rule as the sheikh says it. */
+/* No glow on the letter being said: Safari paints a shadow inside a joined word as a pale box. The star marks it. */
+.tj-letter { color: var(--tj-pending); transition: color 0.22s ease-out; }
+.tj-letter.is-done { color: var(--tj-ink); }
+.tj-letter.is-done[data-rule] { color: var(--rule); }
+.tj-ayah-end { color: var(--tj-pending); font-size: 0.8em; transition: color 0.4s; }
+.tj-ayah-end.is-done { color: var(--tj-gold-edge); }
+
+/* The star that hops from letter to letter. */
+.tj-guide { position: absolute; inset-block-start: 0; left: 0; inline-size: 0; block-size: 0; color: var(--tj-gold); transition: transform 0.16s cubic-bezier(0.3, 1.4, 0.6, 1); pointer-events: none; z-index: 2; }
+.tj-guide svg { position: absolute; left: -10px; top: -14px; filter: drop-shadow(0 2px 0 var(--tj-gold-edge)); animation: tj-hop 0.42s ease-in-out infinite alternate; }
+
+/* A rule's mark pops out of its letter. */
+.tj-pop {
+  position: absolute; inline-size: 30px; block-size: 30px; margin: -50px 0 0 -15px; display: grid; place-items: center; border-radius: 50%;
+  background: var(--rule); color: #fff; box-shadow: 0 3px 0 color-mix(in srgb, var(--rule) 70%, #000); pointer-events: none; z-index: 3;
+  animation: tj-pop 1.5s cubic-bezier(0.2, 1.5, 0.4, 1) both;
+}
+.tj-count { font-family: var(--tj-display); line-height: 1; font-weight: 400; }
+
+/* Madd beads: one bead for each count, filling while the sound is held. */
+.tj-ribbon { position: absolute; display: flex; gap: 5px; padding: 5px 7px; margin-block-start: -6px; transform: translateX(-50%); direction: ltr; border-radius: 999px; background: var(--rule-soft); box-shadow: 0 3px 0 color-mix(in srgb, var(--rule) 35%, #fff); pointer-events: none; z-index: 3; animation: tj-rise 0.25s cubic-bezier(0.2, 1.5, 0.4, 1) both; }
+.tj-ribbon[data-full] { --p: 1; }
+.tj-bead {
+  --lit: clamp(0, (var(--p) * var(--n) - var(--i)) * 8 + 0.4, 1);
+  inline-size: 26px; block-size: 26px; display: grid; place-items: center; border-radius: 50%; font-family: var(--tj-display); font-size: 0.95rem; line-height: 1;
+  color: #fff; background: color-mix(in srgb, var(--rule) calc(var(--lit) * 100%), #fff); border: 2px solid color-mix(in srgb, var(--rule) 55%, #fff);
+  transform: scale(calc(0.82 + var(--lit) * 0.18));
+}
+
+/* Under the board: the rule just met, or a hint. */
+.tj-now { min-block-size: 52px; display: grid; place-items: center; }
+.tj-hint { margin: 0; color: var(--tj-mute); font-weight: 600; text-align: center; text-wrap: balance; }
+.tj-hint svg { vertical-align: -3px; margin-inline-end: 8px; }
+.tj-chip {
+  display: inline-flex; align-items: center; gap: 8px; min-block-size: 44px; padding: 5px 14px 5px 6px; border: 0; border-radius: 999px; background: var(--rule-soft); font-weight: 700; font-size: 0.95rem; text-align: start;
+  box-shadow: 0 3px 0 color-mix(in srgb, var(--rule) 35%, #fff); transition: transform 0.12s ease-out;
+}
+[dir='rtl'] .tj-chip { padding: 5px 6px 5px 14px; }
+.tj-chip:hover { transform: translateY(-2px); }
+.tj-chip:active { transform: translateY(2px); }
+.tj-dot { flex: none; inline-size: 32px; block-size: 32px; display: grid; place-items: center; border-radius: 50%; background: var(--rule); color: #fff; }
+.tj-chip-arabic { color: var(--tj-mute); font-weight: 600; }
+.tj-chip-names { display: grid; gap: 1px; line-height: 1.3; }
+.tj-key .tj-chip-arabic { font-size: 0.85rem; text-align: start; }
+.tj-nowrap { white-space: nowrap; }
+.tj-chip-now { animation: tj-rise 0.3s cubic-bezier(0.2, 1.5, 0.4, 1) both; }
+
+/* The child's own turn: a bar empties while the recording waits. */
+.tj-turn { display: grid; justify-items: center; gap: 8px; inline-size: min(100%, 320px); }
+.tj-turn p { margin: 0; font-weight: 700; text-align: center; }
+.tj-turn-bar { inline-size: 100%; block-size: 10px; border-radius: 999px; background: #dff3e7; overflow: hidden; position: relative; }
+.tj-turn-bar::after { content: ''; position: absolute; inset: 0; border-radius: inherit; background: var(--tj-go); transform-origin: left; animation: tj-drain var(--ms) linear both; }
+[dir='rtl'] .tj-turn-bar::after { transform-origin: right; }
+
+/* Messages over the board: the recording failed, or the surah is finished. */
+.tj-over { position: absolute; inset: 0; z-index: 5; display: grid; place-content: center; justify-items: center; gap: 12px; padding: 24px; text-align: center; border-radius: calc(var(--tj-r) - 3px); background: rgba(255, 255, 255, 0.94); animation: tj-fade 0.3s ease-out both; }
+.tj-over p { margin: 0; max-inline-size: 30ch; font-weight: 600; color: var(--tj-mute); }
+.tj-done h2 { margin: 0; font-family: var(--tj-display); font-weight: 400; font-size: clamp(2rem, 5vw, 3rem); color: var(--tj-gold-edge); }
+.tj-burst { position: relative; inline-size: 0; block-size: 40px; color: var(--tj-gold); }
+.tj-burst svg { position: absolute; left: -11px; top: 0; animation: tj-burst 1.6s cubic-bezier(0.2, 0.8, 0.3, 1) both; animation-delay: calc(var(--i) * 0.05s); --a: calc(var(--i) * 36deg); }
+
+/* Controls */
+.tj-controls { display: flex; align-items: center; justify-content: center; gap: clamp(8px, 3vw, 18px); padding-block-start: 6px; }
+.tj-options { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
+.tj-stops { min-block-size: 46px; font-size: 0.95rem; }
+/* The trial switch between the two timings. */
+.tj-timing { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 8px; font-size: 0.9rem; font-weight: 600; color: var(--tj-mute); }
+.tj-timing .tj-pill { min-block-size: 44px; padding: 0 16px; font-size: 0.9rem; }
+.tj-timing .tj-pill[aria-pressed='true'] { background: var(--tj-ink); color: #fff; box-shadow: 0 5px 0 #131a33; }
+.tj-switch { inline-size: 38px; block-size: 22px; border-radius: 999px; background: #d5dcec; position: relative; transition: background 0.2s; flex: none; }
+.tj-switch::after { content: ''; position: absolute; inset-block-start: 3px; inset-inline-start: 3px; inline-size: 16px; block-size: 16px; border-radius: 50%; background: #fff; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25); transition: translate 0.2s ease-out; }
+.tj-stops[aria-pressed='true'] .tj-switch { background: var(--tj-go); }
+.tj-stops[aria-pressed='true'] .tj-switch::after { translate: 16px 0; }
+[dir='rtl'] .tj-stops[aria-pressed='true'] .tj-switch::after { translate: -16px 0; }
+
+/* The colour key */
+.tj-key { min-width: 0; }
+.tj-key h2 { margin: 0 0 10px; font-family: var(--tj-display); font-weight: 400; font-size: 1.35rem; }
+.tj-key ul { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 10px; }
+
+@media (min-width: 980px) {
+  .tj-body { grid-template-columns: minmax(0, 1fr) 300px; align-items: start; gap: 28px; }
+  .tj-key { padding: 20px; border-radius: var(--tj-r); background: rgba(255, 255, 255, 0.7); border: 3px solid #fff; box-shadow: 0 8px 0 var(--tj-edge); margin-block-start: 58px; }
+  .tj-key ul { flex-direction: column; flex-wrap: nowrap; }
+  .tj-key .tj-chip { inline-size: 100%; }
+}
+
+/* The rule card: a sheet from the bottom on a phone, a card in the middle on a wide screen. */
+.tj-card-backdrop { position: fixed; inset: 0; z-index: 60; display: grid; align-items: end; justify-items: center; background: rgba(28, 36, 72, 0.5); animation: tj-fade 0.2s ease-out both; }
+.tj-card {
+  --tj-ink: #27304f; --tj-mute: #56617f; --tj-pending: #cdd4e6; --tj-card: #fff; --tj-edge: #cfd8ee; --tj-go: #1fae62; --tj-go-edge: #12814a; --tj-gold: #f5b301; --tj-focus: #3b5bdb; --p: 0;
+  position: relative; inline-size: min(100%, 520px); max-block-size: 94dvh; overflow-y: auto; display: grid; justify-items: center; gap: 12px;
+  padding: 22px 20px calc(22px + env(safe-area-inset-bottom)); border-radius: 32px 32px 0 0; background: #fff; color: var(--tj-ink); font-family: var(--font-ui); text-align: center;
+  box-shadow: 0 -10px 40px -10px rgba(28, 36, 72, 0.5); animation: tj-sheet 0.32s cubic-bezier(0.2, 1.1, 0.3, 1) both; outline: none;
+}
+@media (min-width: 640px) {
+  .tj-card-backdrop { align-items: center; padding: 24px; }
+  .tj-card { border-radius: 32px; padding: 26px 28px 28px; box-shadow: 0 10px 0 var(--tj-edge), 0 40px 60px -20px rgba(28, 36, 72, 0.6); }
+}
+.tj-card-close { position: absolute; inset-block-start: 14px; inset-inline-end: 14px; inline-size: 44px; block-size: 44px; box-shadow: 0 3px 0 var(--tj-edge); background: #f3f6fd; }
+.tj-card-word { font-size: clamp(2.6rem, 9vw, 3.6rem); line-height: 1.9; padding-inline: 48px; }
+.tj-card-word .tj-letter.is-picked { text-shadow: 0 0 16px color-mix(in srgb, var(--rule) 50%, transparent); }
+.tj-card-tabs { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; direction: rtl; }
+.tj-tab { display: inline-flex; align-items: center; gap: 6px; min-inline-size: 56px; min-block-size: 48px; padding: 0 12px; border: 3px solid transparent; border-radius: 16px; background: var(--rule-soft); color: var(--rule); font-size: 1.5rem; line-height: 1.3; }
+.tj-tab[aria-selected='true'] { border-color: var(--rule); background: #fff; }
+.tj-card-title { margin: 4px 0 0; display: flex; flex-wrap: wrap; align-items: baseline; justify-content: center; gap: 4px 12px; font-family: var(--tj-display, var(--font-display)); font-weight: 400; font-size: 1.7rem; line-height: 1.2; color: color-mix(in srgb, var(--rule) 72%, #000); }
+.tj-card-arabic { font-size: 1.3rem; color: var(--tj-mute); }
+.tj-card-line { margin: 0; max-inline-size: 34ch; font-size: 1.08rem; line-height: 1.55; font-weight: 500; text-wrap: pretty; }
+.tj-card-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; padding-block-start: 6px; }
+
+/* The scene: the letter alone on a soft ground, moving the way it is said. */
+.tj-scene { position: relative; inline-size: 100%; min-block-size: 168px; display: grid; justify-items: center; align-content: center; gap: 4px; padding: 14px; border-radius: 24px; background: var(--rule-soft); overflow: hidden; }
+.tj-scene-mark { position: absolute; inset-block-start: 12px; inset-inline-start: 12px; inline-size: 44px; block-size: 44px; display: grid; place-items: center; border-radius: 50%; background: var(--rule); color: #fff; box-shadow: 0 4px 0 color-mix(in srgb, var(--rule) 70%, #000); }
+.tj-scene-letters { display: flex; align-items: center; justify-content: center; gap: 18px; font-size: 4.2rem; line-height: 1.7; color: var(--rule); }
+.tj-scene-letter, .tj-scene-next { display: inline-block; }
+.tj-scene-next { color: var(--tj-ink); }
+.tj-scene .tj-beads { display: flex; gap: 7px; direction: ltr; --d: calc((var(--n) + 2) * 0.45s); }
+.tj-scene .tj-bead { inline-size: 30px; block-size: 30px; font-size: 1.05rem; --lit: 0; animation: tj-bead var(--d) linear infinite; animation-delay: calc(var(--i) * 0.45s); }
+.tj-scene[data-live] .tj-bead { animation: none; --lit: clamp(0, (var(--p) * var(--n) - var(--i)) * 8 + 0.4, 1); }
+
+/* Madd: the letter stretches for as long as its beads fill. */
+.tj-scene[data-rule^='madd'] .tj-scene-letter { animation: tj-stretch var(--d, 2s) ease-in-out infinite; transform-origin: center; }
+.tj-scene[data-rule='madd2'] { --d: 1.8s; }
+.tj-scene[data-rule='madd4'] { --d: 2.7s; }
+.tj-scene[data-rule='madd6'] { --d: 3.6s; }
+/* Sun lam: the lam fades away and the next letter is pressed. */
+.tj-scene[data-rule='shamsi'] .tj-scene-mark svg { animation: tj-spin 6s linear infinite; }
+.tj-scene[data-rule='shamsi'] .tj-scene-letter { animation: tj-hide 2.4s ease-in-out infinite; }
+.tj-scene[data-rule='shamsi'] .tj-scene-next { animation: tj-press 2.4s ease-in-out infinite; }
+/* Moon lam: it shines, clear. */
+.tj-scene[data-rule='qamari'] .tj-scene-letter { animation: tj-shine 2s ease-in-out infinite; }
+.tj-scene[data-rule='qamari'] .tj-scene-mark { animation: tj-breathe 2s ease-in-out infinite alternate; }
+/* Silent: it goes quiet. */
+.tj-scene[data-rule='silent'] .tj-scene-letter { animation: tj-hide 2.4s ease-in-out infinite; }
+/* Clear: a crisp sparkle. */
+.tj-scene[data-rule='izhar'] .tj-scene-letter { animation: tj-shine 1.6s ease-in-out infinite; }
+.tj-scene[data-rule='izhar'] .tj-scene-mark svg { animation: tj-twinkle 1.6s ease-in-out infinite; }
+/* Humming: the letter trembles while its two beads fill. */
+.tj-scene[data-rule='ghunnah'] { --d: 1.8s; }
+.tj-scene[data-rule='ghunnah'] .tj-scene-letter { animation: tj-hum 1.8s ease-in-out infinite; }
+/* Hidden noon: it fades halfway and hums. */
+.tj-scene[data-rule='ikhfa'] { --d: 1.8s; }
+.tj-scene[data-rule='ikhfa'] .tj-scene-letter { animation: tj-veil 1.8s ease-in-out infinite; }
+/* Bounce: the letter lands and springs back. */
+.tj-scene[data-rule='qalqalah'] .tj-scene-letter { animation: tj-bounce 1.4s cubic-bezier(0.3, 0, 0.4, 1) infinite; transform-origin: center bottom; }
+.tj-scene[data-rule='qalqalah'] .tj-scene-mark { animation: tj-breathe 0.7s ease-in-out infinite alternate; }
+/* The madd before a hamza stretches like the others. */
+.tj-scene[data-rule='madd5'] { --d: 2.7s; }
+/* Merging: the letter slides into the next one; with humming it trembles on the way. */
+.tj-scene[data-rule='idgham'] .tj-scene-letter { animation: tj-melt 2.2s ease-in-out infinite; }
+.tj-scene[data-rule='idghamg'] { --d: 1.8s; }
+.tj-scene[data-rule='idghamg'] .tj-scene-letter { animation: tj-melt 2.2s ease-in-out infinite, tj-hum 1.1s ease-in-out infinite; }
+/* Turning: the noon flips over into a meem. */
+.tj-scene[data-rule='iqlab'] { --d: 1.8s; }
+.tj-scene[data-rule='iqlab'] .tj-scene-letter { animation: tj-flip 2.2s ease-in-out infinite; }
+.tj-scene[data-rule='iqlab'] .tj-scene-mark svg { animation: tj-spin 3s linear infinite; }
+/* Heavy: it lands with weight. */
+.tj-scene[data-rule='heavy'] .tj-scene-letter { animation: tj-thud 1.8s cubic-bezier(0.5, 0, 0.6, 1) infinite; transform-origin: center bottom; }
+
+@keyframes tj-fade { from { opacity: 0; } }
+@keyframes tj-sheet { from { transform: translateY(40px); opacity: 0; } }
+@keyframes tj-rise { from { opacity: 0; scale: 0.6; } }
+@keyframes tj-hop { from { transform: translateY(0) rotate(-8deg); } to { transform: translateY(-9px) rotate(8deg); } }
+@keyframes tj-breathe { from { scale: 1; } to { scale: 1.08; } }
+@keyframes tj-pop {
+  0% { transform: translateY(18px) scale(0.2); opacity: 0; }
+  18% { transform: translateY(0) scale(1.15); opacity: 1; }
+  30%, 75% { transform: translateY(-2px) scale(1); opacity: 1; }
+  100% { transform: translateY(-16px) scale(0.9); opacity: 0; }
+}
+@keyframes tj-burst {
+  0% { transform: rotate(var(--a)) translateY(0) scale(0.2); opacity: 0; }
+  30% { opacity: 1; }
+  100% { transform: rotate(var(--a)) translateY(-120px) scale(1.1); opacity: 0; }
+}
+@keyframes tj-bead { 0%, 6% { background: #fff; transform: scale(0.82); } 12%, 82% { background: var(--rule); transform: scale(1); } 90%, 100% { background: #fff; transform: scale(0.82); } }
+@keyframes tj-stretch { 0%, 8% { transform: scaleX(1); } 30%, 72% { transform: scaleX(1.45); } 90%, 100% { transform: scaleX(1); } }
+@keyframes tj-hide { 0%, 15% { opacity: 1; transform: scale(1); } 45%, 80% { opacity: 0.22; transform: scale(0.88); } 100% { opacity: 1; transform: scale(1); } }
+@keyframes tj-press { 0%, 35% { transform: scale(1); } 50% { transform: scale(1.3); } 62% { transform: scale(1.12); } 74% { transform: scale(1.26); } 100% { transform: scale(1); } }
+@keyframes tj-shine { 0%, 100% { text-shadow: 0 0 0 transparent; transform: scale(1); } 50% { text-shadow: 0 0 22px color-mix(in srgb, var(--rule) 70%, transparent); transform: scale(1.1); } }
+@keyframes tj-twinkle { 0%, 100% { transform: scale(1) rotate(0); } 50% { transform: scale(1.25) rotate(18deg); } }
+@keyframes tj-spin { to { transform: rotate(360deg); } }
+@keyframes tj-drain { from { transform: scaleX(1); } to { transform: scaleX(0); } }
+@keyframes tj-hum { 0%, 12%, 88%, 100% { transform: translateX(0); } 20%, 36%, 52%, 68% { transform: translateX(-3px) scale(1.06); } 28%, 44%, 60%, 76% { transform: translateX(3px) scale(1.06); } }
+@keyframes tj-veil { 0%, 12%, 90%, 100% { opacity: 1; filter: blur(0); } 30%, 72% { opacity: 0.45; filter: blur(1.5px); } }
+@keyframes tj-bounce { 0%, 100% { transform: translateY(0) scale(1); } 18% { transform: translateY(0) scale(1.12, 0.84); } 36% { transform: translateY(-20px) scale(0.96, 1.06); } 54% { transform: translateY(0) scale(1.06, 0.94); } 68% { transform: translateY(-7px); } 80% { transform: translateY(0); } }
+@keyframes tj-melt { 0%, 15%, 100% { transform: translateX(0); opacity: 1; } 55%, 80% { transform: translateX(-26px) scale(0.8); opacity: 0.25; } }
+@keyframes tj-flip { 0%, 20%, 100% { transform: rotateY(0); } 50%, 80% { transform: rotateY(180deg); } }
+@keyframes tj-bob { from { transform: translateY(0); } to { transform: translateY(-7px); } }
+@keyframes tj-ring { 0% { box-shadow: 0 0 0 0 rgba(31, 174, 98, 0.55); } 100% { box-shadow: 0 0 0 22px rgba(31, 174, 98, 0); } }
+@keyframes tj-star-in { 0% { transform: scale(0) rotate(-40deg); } 70% { transform: scale(1.3) rotate(8deg); } 100% { transform: scale(1) rotate(0); } }
+@keyframes tj-twinkle-sky { from { opacity: 0.55; } to { opacity: 1; } }
+@keyframes tj-drift { from { transform: translateX(-8px); } to { transform: translateX(8px); } }
+@keyframes tj-thud { 0% { transform: translateY(-34px) scale(1); } 28% { transform: translateY(0) scale(1.18, 0.86); } 40% { transform: translateY(-6px) scale(1.05, 1); } 52%, 82% { transform: translateY(0) scale(1.12); } 100% { transform: translateY(-34px) scale(1); } }
+
+/* Still pictures for those who ask for less movement: the colours and the beads stay, the bouncing goes. */
+@media (prefers-reduced-motion: reduce) {
+  .tj *, .tj-card-backdrop, .tj-card, .tj-card * { animation: none !important; transition-duration: 0.01s !important; }
+  .tj-scene .tj-bead { --lit: 1; }
+  .tj-pop { opacity: 1; }
+}
+
+@media (max-width: 420px) {
+  .tj-btn { inline-size: 50px; block-size: 50px; }
+  .tj-play { inline-size: 78px; block-size: 78px; }
+  .tj-step { inline-size: 40px; block-size: 40px; }
+}
+
+/* ---------- The player's game pieces ---------- */
+.tj-sr { position: absolute; inline-size: 1px; block-size: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+/* An arrow that points on: the back arrow turned round, whichever way the page reads. */
+.tj-forward { transform: scaleX(-1); }
+[dir='rtl'] .tj-forward { transform: none; }
+.tj-tag-mode { display: inline-flex; align-items: center; gap: 5px; color: #3730a3; box-shadow: 0 2px 0 #c7c9f5; }
+
+/* Memorising: the verse is covered on the child's turn, but for its first word. */
+.tj-verse.is-covered .tj-word:not(.is-first) { background: #e4e9f6; border-radius: 14px; }
+.tj-verse.is-covered .tj-word:not(.is-first) .tj-letter { color: transparent; }
+.tj-verse.is-covered .tj-ayah-end { color: var(--tj-pending); }
+.tj-check { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
+.tj-peek { min-block-size: 44px; font-size: 0.9rem; }
+
+/* The end of a surah: its three stars, the new ones popping in. */
+.tj-won { display: flex; gap: 10px; color: #d9deea; }
+.tj-won svg.is-won { color: var(--tj-gold); filter: drop-shadow(0 3px 0 var(--tj-gold-edge)); }
+.tj-won svg.is-new { animation: tj-star-in 0.6s cubic-bezier(0.2, 1.4, 0.4, 1) both; animation-delay: calc(0.3s + var(--i) * 0.25s); }
+.tj-new-award { display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px; border-radius: 999px; background: #fff3c4; color: #7a4a00 !important; max-inline-size: none !important; }
+.tj-done-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
+.tj-done-actions a, .tj-card-actions a { text-decoration: none; color: inherit; }
+.tj-done-actions .tj-pill-go, .tj-card-actions .tj-pill-go { color: #fff; }
+.tj-over.tj-done { overflow-y: auto; align-content: start; padding-block: 28px; }
+
+/* ---------- The path of surahs ---------- */
+/* The drifting sky must not make the page scroll sideways. */
+.tj-map { overflow-x: clip; }
+.tj-score { display: flex; gap: 8px; margin-inline-start: auto; }
+.tj-score-chip { display: inline-flex; align-items: center; gap: 6px; min-block-size: 44px; padding: 0 14px; border-radius: 999px; background: #fff; color: var(--tj-gold-edge); font-family: var(--tj-display); font-size: 1.25rem; box-shadow: 0 4px 0 #ecd28a; }
+.tj-score-chip b { font-weight: 400; color: var(--tj-ink); }
+.tj-score-days { color: #e8590c; box-shadow: 0 4px 0 #f6c7a6; }
+
+.tj-shelf { margin: 12px clamp(16px, 4vw, 36px) 0; padding: 14px 16px; border-radius: 24px; background: rgba(255, 255, 255, 0.75); border: 3px solid #fff; box-shadow: 0 6px 0 var(--tj-edge); display: grid; gap: 10px; max-inline-size: 760px; inline-size: calc(100% - 2 * clamp(16px, 4vw, 36px)); margin-inline: auto; }
+.tj-shelf h2 { margin: 0; display: flex; align-items: center; gap: 8px; font-family: var(--tj-display); font-weight: 400; font-size: 1.2rem; }
+.tj-shelf ul { list-style: none; margin: 0; padding: 4px 2px 8px; display: flex; gap: 10px; overflow-x: auto; scrollbar-width: none; }
+.tj-medal { flex: none; inline-size: 56px; block-size: 56px; display: grid; place-items: center; border: 0; border-radius: 50%; background: #e9edf6; color: #aab3c8; box-shadow: 0 4px 0 #d3daea; transition: transform 0.15s ease-out; }
+.tj-medal.is-won { background: radial-gradient(circle at 35% 28%, #ffe58a, var(--tj-gold) 70%); color: #6b4300; box-shadow: 0 4px 0 var(--tj-gold-edge); }
+.tj-medal.is-fresh { animation: tj-bob 0.5s ease-in-out infinite alternate; }
+.tj-medal.is-shown { outline: 3px solid var(--tj-ink); outline-offset: 2px; }
+.tj-medal-text { margin: 0; display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: baseline; font-weight: 500; }
+.tj-medal-text span { margin-inline-start: auto; font-family: var(--tj-display); color: var(--tj-mute); }
+.tj-fresh { border: 0; border-radius: 16px; padding: 10px 14px; background: #fff3c4; color: #7a4a00; font-weight: 600; text-align: start; box-shadow: 0 3px 0 #eac65a; }
+
+.tj-path { position: relative; inline-size: min(100%, 560px); margin: 18px auto 0; }
+/* The sky the path climbs through: a crescent and a few stars drifting behind the stones. */
+.tj-path::before, .tj-path::after { content: ''; position: absolute; inset: 0; pointer-events: none; background-repeat: repeat-y; }
+.tj-path::before {
+  background-image:
+    radial-gradient(circle at 12% 90px, #fff 0 5px, transparent 6px),
+    radial-gradient(circle at 88% 260px, #ffe9a8 0 7px, transparent 8px),
+    radial-gradient(circle at 8% 470px, #fff 0 4px, transparent 5px),
+    radial-gradient(circle at 92% 640px, #fff 0 6px, transparent 7px),
+    radial-gradient(circle at 30% 760px, #ffe9a8 0 4px, transparent 5px);
+  background-size: 100% 820px;
+  animation: tj-twinkle-sky 3.2s ease-in-out infinite alternate;
+}
+.tj-path::after {
+  background-image:
+    radial-gradient(ellipse 46px 18px at 14% 330px, rgba(255, 255, 255, 0.9) 98%, transparent),
+    radial-gradient(ellipse 30px 14px at 20% 318px, rgba(255, 255, 255, 0.9) 98%, transparent),
+    radial-gradient(ellipse 52px 20px at 86% 880px, rgba(255, 255, 255, 0.9) 98%, transparent),
+    radial-gradient(ellipse 32px 15px at 80% 866px, rgba(255, 255, 255, 0.9) 98%, transparent);
+  background-size: 100% 1100px;
+  animation: tj-drift 9s ease-in-out infinite alternate;
+}
+.tj-path ol, .tj-trail { z-index: 1; }
+.tj-path ol { position: relative; }
+.tj-trail { position: absolute; inset: 0; inline-size: 100%; block-size: 100%; overflow: visible; }
+.tj-trail path { fill: none; stroke: #fff; stroke-width: 14; stroke-linecap: round; stroke-dasharray: 2 26; vector-effect: non-scaling-stroke; filter: drop-shadow(0 3px 0 rgba(120, 140, 200, 0.35)); }
+.tj-path ol { list-style: none; margin: 0; padding: 0; }
+.tj-stone { position: absolute; inline-size: 0; block-size: 0; }
+.tj-stone > button, .tj-goal { position: absolute; left: -44px; top: -44px; display: block; border: 0; padding: 0; background: none; }
+.tj-stone-face { inline-size: 88px; block-size: 88px; display: grid; place-items: center; border-radius: 50%; border: 4px solid #fff; color: #fff; transition: transform 0.15s ease-out; }
+.tj-stone > button:hover .tj-stone-face { transform: translateY(-3px); }
+.tj-stone > button:active .tj-stone-face { transform: translateY(4px); }
+.tj-stone.is-open .tj-stone-face { background: radial-gradient(circle at 35% 28%, var(--tj-go-top), var(--tj-go) 70%); box-shadow: 0 7px 0 var(--tj-go-edge), 0 16px 22px -10px rgba(18, 129, 74, 0.7); }
+.tj-stone.is-done .tj-stone-face { background: radial-gradient(circle at 35% 28%, #ffe58a, var(--tj-gold) 70%); color: #fff8dc; box-shadow: 0 7px 0 var(--tj-gold-edge), 0 16px 22px -10px rgba(201, 138, 0, 0.7); }
+.tj-stone.is-locked .tj-stone-face { background: #dfe4f0; color: #9aa4bb; box-shadow: 0 7px 0 #c5cde0; }
+.tj-stone.is-next .tj-stone-face { animation: tj-bob 0.7s ease-in-out infinite alternate, tj-ring 1.6s ease-out infinite; }
+.tj-stone-label { position: absolute; top: 14px; display: grid; gap: 1px; min-inline-size: 104px; padding: 7px 12px; border-radius: 16px; background: #fff; box-shadow: 0 4px 0 var(--tj-edge); text-align: start; line-height: 1.2; color: var(--tj-ink); }
+.tj-stone.is-left .tj-stone-label { left: 100px; }
+.tj-stone.is-right .tj-stone-label { right: 100px; text-align: end; }
+.tj-stone-label b { font-family: var(--tj-display); font-weight: 400; font-size: 1.3rem; }
+.tj-stone-label > span { font-size: 0.8rem; font-weight: 600; color: var(--tj-mute); white-space: nowrap; }
+.tj-stone.is-locked .tj-stone-label { opacity: 0.7; }
+.tj-stone-label > .tj-stone-stars { display: flex; gap: 2px; color: #d5dbe8; }
+.tj-stone.is-right .tj-stone-stars { justify-content: flex-end; }
+.tj-stone-stars .is-won, .tj-goals .is-won svg { color: var(--tj-gold); }
+.tj-goal.is-done .tj-stone-face { background: radial-gradient(circle at 35% 28%, #ffe58a, var(--tj-gold) 70%); box-shadow: 0 7px 0 var(--tj-gold-edge); }
+.tj-map-foot { display: grid; place-items: center; padding: 8px 16px calc(28px + env(safe-area-inset-bottom)); }
+
+/* A surah's card: its goals, and the two ways to play it. */
+.tj-surah-card { gap: 10px; }
+.tj-surah-name { margin: 0; display: grid; gap: 2px; font-family: var(--tj-display, var(--font-display)); font-weight: 400; font-size: 2.3rem; line-height: 1.2; padding-inline: 44px; }
+.tj-surah-name small { font-family: var(--font-ui); font-size: 1rem; font-weight: 600; color: var(--tj-mute); }
+.tj-surah-count { margin: 0; color: var(--tj-mute); font-weight: 600; }
+.tj-goals { list-style: none; margin: 4px 0; padding: 0; display: grid; gap: 8px; inline-size: 100%; text-align: start; }
+.tj-goals li { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-radius: 16px; background: #f3f6fd; font-weight: 600; }
+.tj-goals svg { flex: none; color: #cfd6e6; }
+.tj-goals .is-won { background: #fff6d6; }
+.tj-pill-mind { background: #e2e1fd; color: #3730a3 !important; box-shadow: 0 5px 0 #b9b6f3, 0 12px 20px -10px rgba(79, 70, 229, 0.6); }
+.tj-pill.is-off { opacity: 0.55; cursor: default; }
+.tj-surah-hint, .tj-surah-locked { margin: 0; color: var(--tj-mute); font-weight: 600; }
+.tj-surah-locked { display: flex; align-items: center; gap: 10px; padding: 14px; border-radius: 16px; background: #f3f6fd; text-align: start; }
+a.tj-pill { text-decoration: none; }
+
+@media (max-width: 420px) {
+  .tj-stone-face { inline-size: 76px; block-size: 76px; }
+  .tj-stone > button, .tj-goal { left: -38px; top: -38px; }
+  .tj-stone.is-left .tj-stone-label { left: 86px; }
+  .tj-stone.is-right .tj-stone-label { right: 86px; }
+}
+
+/* Jana Tajweed: the language picker on the path. */
+.tj-lang { block-size: 44px; padding: 0 12px; border: 2px solid var(--tj-edge); border-radius: 999px; background: var(--tj-card); color: var(--tj-ink); font: inherit; font-weight: 700; }
