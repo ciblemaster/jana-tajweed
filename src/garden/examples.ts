@@ -63,6 +63,13 @@ export function shuffle<T>(list: T[]): T[] {
   return out;
 }
 
+/** At most four rules to pick from: the right one and up to three others, in the level's order. */
+export function optionsFor(right: TajweedRule, rules: TajweedRule[]): TajweedRule[] {
+  if (rules.length <= 4) return rules;
+  const others = shuffle(rules.filter((r) => r !== right)).slice(0, 3);
+  return rules.filter((r) => r === right || others.includes(r));
+}
+
 export type Round =
   | { kind: 'tap'; word: ExampleWord; rule: TajweedRule }
   | { kind: 'which'; word: ExampleWord; letter: TajweedLetter; options: TajweedRule[] };
@@ -78,7 +85,7 @@ export function makeRounds(examples: Examples, count: number): Round[] {
     const word = words[i % words.length];
     const letter = word.marked[Math.floor(Math.random() * word.marked.length)];
     const which = examples.rules.length > 1 && i % 2 === 1;
-    rounds.push(which ? { kind: 'which', word, letter, options: examples.rules } : { kind: 'tap', word, rule: letter.rule! });
+    rounds.push(which ? { kind: 'which', word, letter, options: optionsFor(letter.rule!, examples.rules) } : { kind: 'tap', word, rule: letter.rule! });
   }
   return rounds;
 }

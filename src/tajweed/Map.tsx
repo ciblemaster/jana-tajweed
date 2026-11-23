@@ -1,12 +1,13 @@
-import { Brain, Flame, Lock, Medal, Play, Sprout, Star, Trophy, X } from 'lucide-react';
+import { BookOpen, Brain, CheckCircle2, Circle, Flame, Lock, Medal, Play, Sprout, Star, Target, Trophy, X } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { ensureFonts, fontStack } from '../core/fonts';
 import { fill, LANG_NAMES, LANGS, setLang, useLang, useText, type Lang } from '../core/lang';
 import { AWARD_TEXT, TAJWEED_TEXT as T } from '../core/texts';
-import { awards, isOpen, nextUp, readProgress, STARS, starsOf, streak, totalStars, won, writeProgress, type Star as StarKind } from './progress';
-import { GAME_SURAHS, gameUrl, lessonUrl, profilesUrl, surahName, type SurahInfo } from './surahs';
+import { awards, isOpen, missionToday, nextUp, readProgress, STARS, starsOf, streak, totalStars, won, writeProgress, type Star as StarKind } from './progress';
+import { GAME_SURAHS, gameUrl, lessonUrl, missionUrl, profilesUrl, surahInfo, surahName, type SurahInfo } from './surahs';
+import { RULE_TEXT } from '../core/texts';
 import { APP_TEXT as A } from '../core/appTexts';
-import { LEVELS, levelOpen } from '../garden/levels';
+import { LEVELS, levelOpen, missionRule } from '../garden/levels';
 import { Avatar } from '../profiles/Avatar';
 import { currentProfile } from '../profiles/store';
 import { RuleMark } from './letters';
@@ -75,6 +76,8 @@ export default function TajweedMap() {
   const pickedAt = picked ? GAME_SURAHS.findIndex((s) => s.n === picked.n) : -1;
   const pickedOpen = picked ? isOpen(progress, picked.n) : false;
   const kid = currentProfile();
+  const mission = missionToday(progress);
+  const todayRule = missionRule(progress);
   const nextLevel = LEVELS.find((l) => l.rules.length && !progress.garden[l.id]?.done)?.id;
 
   return (
@@ -93,6 +96,30 @@ export default function TajweedMap() {
           <span className="tj-score-chip tj-score-days" title={tx(T.daysInRow)}><Flame size={20} strokeWidth={2.5} aria-hidden /><b>{streak(progress)}</b><span className="tj-sr">{tx(T.daysInRow)}</span></span>
         </div>
       </header>
+
+      <section className="jg-garden jg-mission" aria-labelledby="jg-mission-title">
+        <h2 id="jg-mission-title"><Target size={20} strokeWidth={2.5} aria-hidden />{tx(A.mission)}</h2>
+        {mission.review && mission.verse ? (
+          <p className="jg-mission-done"><CheckCircle2 size={20} strokeWidth={2.5} aria-hidden />{tx(A.missionDone)}</p>
+        ) : (
+          <ol className="jg-mission-steps">
+            <li>
+              <a href={missionUrl()} className={mission.review ? 'is-done' : ''} data-rule={todayRule.rule}>
+                {mission.review ? <CheckCircle2 size={22} strokeWidth={2.5} aria-hidden /> : <Circle size={22} strokeWidth={2.5} aria-hidden />}
+                <span className="tj-dot"><RuleMark rule={todayRule.rule} size={14} /></span>
+                <span>{fill(tx(A.missionReview), { rule: tx(RULE_TEXT[todayRule.rule].name) })}</span>
+              </a>
+            </li>
+            <li>
+              <a href={gameUrl(upNext)} className={mission.verse ? 'is-done' : ''}>
+                {mission.verse ? <CheckCircle2 size={22} strokeWidth={2.5} aria-hidden /> : <Circle size={22} strokeWidth={2.5} aria-hidden />}
+                <span className="tj-dot jg-dot-book"><BookOpen size={14} strokeWidth={2.5} /></span>
+                <span>{fill(tx(A.missionVerse), { surah: surahName(surahInfo(upNext), lang) })}</span>
+              </a>
+            </li>
+          </ol>
+        )}
+      </section>
 
       <section className="jg-garden" aria-labelledby="jg-garden-title">
         <h2 id="jg-garden-title"><Sprout size={20} strokeWidth={2.5} aria-hidden />{tx(A.garden)}</h2>

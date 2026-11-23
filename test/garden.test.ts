@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { buildTajweedTimeline, FATIHA_HUSARY } from '../src/core/tajweed';
-import { makeRounds, shuffle, type Examples } from '../src/garden/examples';
+import { makeRounds, optionsFor, shuffle, type Examples } from '../src/garden/examples';
 import { LEVELS, levelById, levelOpen } from '../src/garden/levels';
 import { bandRules } from '../src/profiles/store';
 
@@ -22,13 +22,19 @@ describe('Rule Garden', () => {
     expect(levelOpen({}, 'qalqalah', true)).toBe(true);
   });
 
-  it('never opens a level that is not built yet', () => {
-    const coming = LEVELS.filter((l) => !l.rules.length);
-    expect(coming.length).toBeGreaterThan(0);
-    for (const l of coming) {
-      expect(levelOpen({ madd: { done: true }, lam: { done: true }, qalqalah: { done: true }, heavy: { done: true }, noon: { done: true } }, l.id, true)).toBe(false);
-      expect(levelById(l.id)).toBeUndefined();
+  it('has six levels, each teaching at least one rule', () => {
+    expect(LEVELS.map((l) => l.id)).toEqual(['madd', 'lam', 'qalqalah', 'heavy', 'noon', 'together']);
+    for (const l of LEVELS) expect(levelById(l.id)?.rules.length).toBeGreaterThan(0);
+  });
+
+  it('offers at most four rules to choose from, always with the right one', () => {
+    const all = LEVELS.find((l) => l.id === 'together')!.rules;
+    for (let i = 0; i < 20; i++) {
+      const options = optionsFor('ikhfa', all);
+      expect(options.length).toBe(4);
+      expect(options).toContain('ikhfa');
     }
+    expect(optionsFor('madd2', ['madd2', 'madd4'])).toEqual(['madd2', 'madd4']);
   });
 
   it('asks about letters that really carry the rule', () => {
