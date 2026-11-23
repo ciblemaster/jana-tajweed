@@ -7,7 +7,7 @@ import { awards, isOpen, missionToday, nextUp, readProgress, STARS, starsOf, str
 import { GAME_SURAHS, gameUrl, lessonUrl, missionUrl, profilesUrl, surahInfo, surahName, type SurahInfo } from './surahs';
 import { RULE_TEXT } from '../core/texts';
 import { APP_TEXT as A } from '../core/appTexts';
-import { LEVELS, levelOpen, missionRule } from '../garden/levels';
+import { LEVELS, levelOpen, missionRule, playable } from '../garden/levels';
 import { Avatar } from '../profiles/Avatar';
 import { currentProfile } from '../profiles/store';
 import { RuleMark } from './letters';
@@ -78,7 +78,9 @@ export default function TajweedMap() {
   const kid = currentProfile();
   const mission = missionToday(progress);
   const todayRule = missionRule(progress);
-  const nextLevel = LEVELS.find((l) => l.rules.length && !progress.garden[l.id]?.done)?.id;
+  // The next level to play; Level 0 only for a child who has not started the rules.
+  const startedRules = LEVELS.some((l) => l.rules.length && progress.garden[l.id]?.done);
+  const nextLevel = LEVELS.find((l) => playable(l) && !progress.garden[l.id]?.done && !(l.kind && startedRules))?.id;
 
   return (
     <div className="tj tj-map" style={{ '--tj-display': fontStack(DISPLAY_FONT) } as CSSProperties}>
@@ -130,9 +132,9 @@ export default function TajweedMap() {
             const doneLevel = progress.garden[l.id]?.done;
             const face = (
               <>
-                <span className="jg-hero" data-rule={l.colour}>{l.rules.length ? <RuleMark rule={l.colour} size={26} /> : <Lock size={24} strokeWidth={2.5} />}</span>
+                <span className="jg-hero" data-rule={l.colour}>{l.kind ? <span className="jg-hero-letters" lang="ar">أب</span> : l.rules.length ? <RuleMark rule={l.colour} size={26} /> : <Lock size={24} strokeWidth={2.5} />}</span>
                 <span>{tx(l.name)}</span>
-                <small>{doneLevel ? <Star size={16} fill="currentColor" strokeWidth={0} className="jg-level-star" aria-label="★" /> : !l.rules.length ? tx(A.soon) : !open ? tx(A.locked) : fill(tx(A.level), { n: i + 1 })}</small>
+                <small>{doneLevel ? <Star size={16} fill="currentColor" strokeWidth={0} className="jg-level-star" aria-label="★" /> : !playable(l) ? tx(A.soon) : !open ? tx(A.locked) : fill(tx(A.level), { n: i })}</small>
               </>
             );
             return (

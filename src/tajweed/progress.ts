@@ -86,14 +86,30 @@ export function nextUp(progress: Progress): number {
   return (GAME_SURAHS.find((s) => !progress.surahs[s.n]?.listen) ?? GAME_SURAHS[GAME_SURAHS.length - 1]).n;
 }
 
-/** The days in a row the child has played, ending today or yesterday. */
-export function streak(progress: Progress): number {
+/**
+ * The days in a row the child has played, ending today or yesterday. Gentle: one missed day a week is forgiven,
+ * so a weekend away does not wipe it out. Only days played count towards the number.
+ */
+export function streak(progress: Progress, now = new Date()): number {
+  const played = new Set(progress.days);
+  const day = new Date(now);
+  const key = () => day.toISOString().slice(0, 10);
+  const back = () => day.setUTCDate(day.getUTCDate() - 1);
+  if (!played.has(key())) back();
   let count = 0;
-  const day = new Date();
-  if (!progress.days.includes(today())) day.setDate(day.getDate() - 1);
-  while (progress.days.includes(day.toISOString().slice(0, 10))) {
-    count += 1;
-    day.setDate(day.getDate() - 1);
+  let sinceForgiven = Infinity;
+  for (;;) {
+    if (played.has(key())) {
+      count += 1;
+      sinceForgiven += 1;
+    } else {
+      // A missed day: forgiven when the day before it was played and no other day was forgiven in the week after it.
+      const before = new Date(day);
+      before.setUTCDate(before.getUTCDate() - 1);
+      if (count === 0 || sinceForgiven < 6 || !played.has(before.toISOString().slice(0, 10))) break;
+      sinceForgiven = 0;
+    }
+    back();
   }
   return count;
 }

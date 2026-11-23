@@ -16,15 +16,17 @@ const examples: Examples = { surah: 1, timeline, words, rules: [...rules] };
 
 describe('Rule Garden', () => {
   it('opens the first level, and each next one once the one before is done', () => {
+    expect(levelOpen({}, 'letters')).toBe(true);
     expect(levelOpen({}, 'madd')).toBe(true);
     expect(levelOpen({}, 'lam')).toBe(false);
     expect(levelOpen({ madd: { done: true } }, 'lam')).toBe(true);
     expect(levelOpen({}, 'qalqalah', true)).toBe(true);
   });
 
-  it('has six levels, each teaching at least one rule', () => {
-    expect(LEVELS.map((l) => l.id)).toEqual(['madd', 'lam', 'qalqalah', 'heavy', 'noon', 'together']);
-    for (const l of LEVELS) expect(levelById(l.id)?.rules.length).toBeGreaterThan(0);
+  it('has Level 0 for letters, then six levels each teaching at least one rule', () => {
+    expect(LEVELS.map((l) => l.id)).toEqual(['letters', 'madd', 'lam', 'qalqalah', 'heavy', 'noon', 'together']);
+    expect(levelById('letters')?.kind).toBe('letters');
+    for (const l of LEVELS.slice(1)) expect(levelById(l.id)?.rules.length).toBeGreaterThan(0);
   });
 
   it('offers at most four rules to choose from, always with the right one', () => {
