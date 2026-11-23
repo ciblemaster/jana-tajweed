@@ -19,6 +19,8 @@ const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 export interface Options {
   /** Signs the session cookie. Required in production. */
   secret: string;
+  /** The voice feedback service (scripts/tajweed/serve.py); without it, voice feedback is off. */
+  speechUrl?: string;
   /** Sends the cookie over HTTPS only. */
   secure?: boolean;
 }
@@ -69,7 +71,9 @@ export function createApp(db: Db, options: Options) {
   const tries = limiter();
 
   app.set('trust proxy', 1);
-  app.use(express.json({ limit: '256kb' }));
+  // A recording for voice feedback is bigger than anything else: it gets its own limit on its own route.
+  const smallJson = express.json({ limit: '256kb' });
+  app.use((req, res, next) => (req.path === '/api/voice/check' ? next() : smallJson(req, res, next)));
   app.use(
     '/api',
     session({
@@ -194,6 +198,55 @@ export function createApp(db: Db, options: Options) {
         [req.session.parentId, req.params.id]
       );
       res.json({ ok: true });
+    })
+  );
+
+  // Voice feedback: the recording passes through to the speech service and is kept nowhere, not even in a log.
+  let speechUp: { ok: boolean; at: number } = { ok: false, at: 0 };
+  const speechAvailable = async () => {
+    if (!options.speechUrl) return false;
+    if (Date.now() - speechUp.at < 60_000) return speechUp.ok;
+    const ok = await fetch(`${options.speechUrl}/health`, { signal: AbortSignal.timeout(2000) }).then((r) => r.ok, () => false);
+    speechUp = { ok, at: Date.now() };
+    return ok;
+  };
+  const checks = new Map<string, number[]>();
+
+  app.get('/api/voice', wrap(async (_req, res) => res.json({ available: await speechAvailable() })));
+
+  app.post(
+    '/api/voice/check',
+    signedIn,
+    express.json({ limit: '6mb' }),
+    wrap(async (req, res) => {
+      const { letters, audio } = req.body ?? {};
+      const fine =
+        Array.isArray(letters) &&
+        letters.length > 0 &&
+        letters.length <= 400 &&
+        letters.every((l) => l && typeof l.text === 'string' && l.text.length <= 8 && (l.rule == null || typeof l.rule === 'string') && Number.isInteger(l.word)) &&
+        typeof audio === 'string' &&
+        audio.length > 0;
+      if (!fine) return res.status(400).json({ error: 'bad_request' });
+      // Sixty checks an hour for a family is plenty for children, and keeps the service for everyone.
+      const id = req.session.parentId!;
+      const recent = (checks.get(id) ?? []).filter((t) => Date.now() - t < 3600_000);
+      if (recent.length >= 60) return res.status(429).json({ error: 'too_many' });
+      checks.set(id, [...recent, Date.now()]);
+      if (!(await speechAvailable())) return res.status(503).json({ error: 'unavailable' });
+      const answer = await fetch(`${options.speechUrl}/align`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ letters: letters.map((l: { text: string; rule?: string | null; word: number }) => ({ text: l.text, rule: l.rule ?? null, word: l.word })), audio }),
+        signal: AbortSignal.timeout(30_000)
+      }).catch(() => null);
+      if (!answer) {
+        speechUp = { ok: false, at: Date.now() };
+        return res.status(503).json({ error: 'unavailable' });
+      }
+      if (answer.status === 422) return res.status(422).json({ error: 'bad_audio' });
+      if (!answer.ok) return res.status(502).json({ error: 'speech' });
+      res.json(await answer.json());
     })
   );
 

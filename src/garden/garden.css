@@ -144,3 +144,5 @@
 .jg-zone[data-state='wrong'] { border-color: #c0392b; background: #fdecea; animation: jg-shake 0.4s; }
 .jg-mark-chip { gap: 10px; }
 .jg-mark-shape { font-size: 34px; line-height: 1.2; }
+.jaccount-voice { display: grid; gap: 8px; padding: 12px; border-radius: 16px; background: #fffaf0; }
+.jaccount-voice h3 { display: flex; align-items: center; gap: 6px; margin: 0; font-size: 1rem; }

@@ -10,6 +10,8 @@ import { ayahOf, AYAHS, DISPLAY_FONT, HAS_CHILDREN, lastWordEndedBy, leadRule, M
 import { GAME_SURAHS, gameUrl, surahInfo, surahName } from './surahs';
 import { useRecitation } from './useRecitation';
 import { useRecorder } from './useRecorder';
+import { VoiceCheck } from './VoiceCheck';
+import { voiceAvailable, voiceOn } from '../account/voice';
 import { bandRules, currentProfile } from '../profiles/store';
 import './tajweed.css';
 
@@ -163,6 +165,11 @@ export default function Tajweed() {
 
   const recitation = useRecitation(TIMELINE.audioUrl, onTick, onEnd);
   const recorder = useRecorder();
+  /** Voice feedback, when a grown-up turned it on and the server can check recordings. */
+  const [voice, setVoice] = useState(false);
+  useEffect(() => {
+    if (voiceOn()) void voiceAvailable().then(setVoice);
+  }, []);
   const { playing, status, play, pause, seek, setRate, retry } = recitation;
   pauseRef.current = pause;
 
@@ -587,6 +594,7 @@ export default function Tajweed() {
                     <button className="tj-pill tj-hear" aria-pressed={hearing === 'me'} onClick={() => (hearing === 'me' ? hush() : hearMe(turn.ayah))}><Mic size={18} strokeWidth={2.5} />{tx(T.listenMe)}</button>
                     <button className="tj-pill tj-hear" aria-pressed={hearing === 'sheikh'} onClick={() => (hearing === 'sheikh' ? hush() : hearSheikh(turn.ayah))}><User size={18} strokeWidth={2.5} />{tx(T.listenSheikh)}</button>
                   </div>
+                  {voice && takes.has(turn.ayah) && <VoiceCheck key={`${turn.ayah}-${takes.get(turn.ayah)}`} timeline={TIMELINE} verseIndex={AYAHS[turn.ayah].first} takeUrl={takes.get(turn.ayah)!} />}
                   <div className="tj-check">
                     <button className="tj-pill" onClick={() => compareDone(true)}><RotateCcw size={18} strokeWidth={2.5} />{tx(T.recordAgain)}</button>
                     <button className="tj-pill tj-pill-go" onClick={() => compareDone(false)}><Check size={20} strokeWidth={3} />{tx(T.nextVerse)}</button>
