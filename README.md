@@ -84,3 +84,19 @@ uv venv --python 3.11 .venv && uv pip install --python .venv/bin/python torch==2
 Then start the server with `SPEECH_URL=http://127.0.0.1:8790`. It is a trial: per the plan, it should be checked
 against a teacher on real children's recitations (8 verses in 10 agreeing) before it is shown to children widely.
 `python3 -m unittest scripts/tajweed/test_sounds.py` tests how letters are said (no torch needed).
+
+## Phone and tablet apps (Capacitor)
+
+`android/` and `ios/` hold the native shells around the same web app. To build them:
+
+```sh
+VITE_API_URL=https://your-server.example npm run app:sync   # build the web app and copy it into both shells
+npm run app:android                                        # opens Android Studio: Run, or Build > Generate Signed Bundle
+npm run app:ios                                            # opens Xcode (on a Mac, after `cd ios/App && pod install`)
+```
+
+Without `VITE_API_URL` the apps work fully on the device, without accounts or voice feedback. Calls to the server
+go through Capacitor's native HTTP layer, so the sign-in cookie works inside the app. The microphone permission is
+declared for both (Android `RECORD_AUDIO`, iOS `NSMicrophoneUsageDescription`). The service worker is only
+registered on the web. Store icons and splash screens still need to be made from `public/icons/`
+(for example with `npx @capacitor/assets generate`).

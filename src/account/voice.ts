@@ -1,4 +1,5 @@
 import type { CheckLetter, Heard } from '../core';
+import { apiUrl } from '../core/api';
 import { readAccount } from './sync';
 
 /** Voice feedback is turned on per device by a grown-up, and needs their account: the recording goes to our server. */
@@ -24,7 +25,7 @@ export function setVoiceOn(on: boolean) {
 /** Whether the server can check recordings at all. */
 export async function voiceAvailable(): Promise<boolean> {
   try {
-    const res = await fetch('/api/voice', { credentials: 'same-origin' });
+    const res = await fetch(apiUrl('/voice'), { credentials: 'include' });
     return res.ok && ((await res.json()) as { available: boolean }).available;
   } catch {
     return false;
@@ -42,9 +43,9 @@ const toBase64 = (blob: Blob) =>
 /** Sends one verse the child recited; the answer says where each letter was heard. Null when it could not be checked. */
 export async function checkRecitation(letters: CheckLetter[], recording: Blob): Promise<Heard[] | null> {
   try {
-    const res = await fetch('/api/voice/check', {
+    const res = await fetch(apiUrl('/voice/check'), {
       method: 'POST',
-      credentials: 'same-origin',
+      credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ letters: letters.map((l) => ({ text: l.text, rule: l.rule ?? null, word: l.word })), audio: await toBase64(recording) })
     });
