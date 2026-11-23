@@ -94,3 +94,30 @@
 .tj-kid-btn { display: inline-flex; align-items: center; gap: 8px; block-size: 44px; padding: 0 12px 0 4px; border: 0; border-radius: 999px; background: var(--tj-card); box-shadow: 0 3px 0 var(--tj-edge); color: var(--tj-ink); font: inherit; font-weight: 800; text-decoration: none; }
 .tj-kid-btn .jp-avatar { inline-size: 36px; block-size: 36px; }
 .jg a.tj-pill:not(.tj-pill-go) { color: var(--tj-ink); }
+
+/* Today's mission on the map. */
+.jg-mission-steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.jg-mission-steps a { display: flex; align-items: center; gap: 10px; min-block-size: 52px; padding: 6px 14px; border-radius: 18px; background: #fff; box-shadow: 0 4px 0 var(--tj-edge); color: var(--tj-ink); font-weight: 800; text-decoration: none; }
+.jg-mission-steps a.is-done { color: var(--tj-mute); }
+.jg-mission-steps a.is-done > svg { color: var(--tj-go); }
+.jg-dot-book { background: var(--tj-ink); }
+.jg-mission-done { display: flex; align-items: center; gap: 8px; margin: 0; color: var(--tj-go-edge); font-weight: 800; }
+
+/* The grown-ups' page */
+.jparents .tj-top { inline-size: min(100%, 440px); }
+.jparents .jg-hero { --rule: var(--tj-go); justify-self: center; }
+.jparents-list { display: grid; gap: 18px; inline-size: min(100%, 440px); }
+.jparents-kid { inline-size: 100%; }
+.jparents-kid h2 { display: flex; align-items: center; justify-content: center; gap: 10px; }
+.jparents-kid h3 { margin: 4px 0 0; font-size: 1rem; }
+.jparents-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px; margin: 0; }
+.jparents-stats div { padding: 10px; border-radius: 14px; background: #f3f5fb; }
+.jparents-stats dt { color: var(--tj-mute); font-weight: 700; font-size: 0.85rem; }
+.jparents-stats dd { margin: 2px 0 0; font-family: var(--tj-display); font-size: 1.4rem; }
+.jparents-rules { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.jparents-rules li { display: flex; justify-content: space-between; gap: 10px; padding: 8px 12px; border-radius: 12px; background: #f3f5fb; font-weight: 700; }
+.jparents-rules li span:last-child { font-weight: 800; }
+.jparents-rules [data-strength='strong'] span:last-child { color: #1d8a4f; }
+.jparents-rules [data-strength='growing'] span:last-child { color: #b7791f; }
+.jparents-rules [data-strength='practise'] span:last-child { color: #c0392b; }
+.jp-gate-link { color: var(--tj-mute); font-weight: 700; }

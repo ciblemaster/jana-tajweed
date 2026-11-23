@@ -1,6 +1,7 @@
-import type { TajweedRule } from '../core';
+import { TAJWEED_RULES, type TajweedRule } from '../core';
 import { APP_TEXT as A } from '../core/appTexts';
 import type { L } from '../core/lang';
+import { weakestRule, type Progress } from '../tajweed/progress';
 
 export interface Level {
   id: string;
@@ -12,14 +13,14 @@ export interface Level {
   colour: TajweedRule;
 }
 
-/** The Rule Garden in the order a child learns it. The last three are on the plan and not built yet. */
+/** The Rule Garden in the order a child learns it. */
 export const LEVELS: Level[] = [
   { id: 'madd', name: A.maddName, line: A.maddLine, rules: ['madd2', 'madd4', 'madd5', 'madd6'], colour: 'madd2' },
   { id: 'lam', name: A.lamName, line: A.lamLine, rules: ['shamsi', 'qamari', 'silent'], colour: 'shamsi' },
   { id: 'qalqalah', name: A.qalqalahName, line: A.qalqalahLine, rules: ['qalqalah'], colour: 'qalqalah' },
-  { id: 'heavy', name: A.heavyName, rules: [], colour: 'heavy' },
-  { id: 'noon', name: A.noonName, rules: [], colour: 'ghunnah' },
-  { id: 'together', name: A.togetherName, rules: [], colour: 'idghamg' }
+  { id: 'heavy', name: A.heavyName, line: A.heavyLine, rules: ['heavy'], colour: 'heavy' },
+  { id: 'noon', name: A.noonName, line: A.noonLine, rules: ['ghunnah', 'izhar', 'ikhfa', 'idghamg', 'idgham', 'iqlab'], colour: 'ghunnah' },
+  { id: 'together', name: A.togetherName, line: A.togetherLine, rules: [...TAJWEED_RULES], colour: 'idghamg' }
 ];
 
 export function levelById(id: string | null): Level | undefined {
@@ -32,3 +33,16 @@ export function levelOpen(garden: Record<string, { done?: boolean }>, id: string
   if (at < 0 || !LEVELS[at].rules.length) return false;
   return at === 0 || !!unlockAll || !!garden[LEVELS[at - 1].id]?.done;
 }
+
+/**
+ * The rule today's review is about: the one the child gets wrong most, or else the first rule of the level they are
+ * on. The review asks about the whole level that rule belongs to, so a "which rule?" question has choices.
+ */
+export function missionRule(progress: Progress): { rule: TajweedRule; rules: TajweedRule[] } {
+  const weak = weakestRule(progress);
+  const level = weak
+    ? LEVELS.find((l) => l.id !== 'together' && l.rules.includes(weak))!
+    : [...LEVELS].reverse().find((l) => l.id !== 'together' && levelOpen(progress.garden, l.id, progress.unlockAll)) ?? LEVELS[0];
+  return { rule: weak ?? level.rules[0], rules: level.rules };
+}
+

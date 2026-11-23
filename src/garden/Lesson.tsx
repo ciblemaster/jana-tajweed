@@ -7,7 +7,7 @@ import { fill, useLang, useText } from '../core/lang';
 import { RULE_TEXT } from '../core/texts';
 import { bandRules, currentProfile } from '../profiles/store';
 import { RuleMark } from '../tajweed/letters';
-import { earnLevel, readProgress } from '../tajweed/progress';
+import { earnLevel, noteAnswer, readProgress } from '../tajweed/progress';
 import { gameUrl, surahInfo, surahName } from '../tajweed/surahs';
 import { DISPLAY_FONT, MUSHAF_FONT } from '../tajweed/theme';
 import { useRecitation } from '../tajweed/useRecitation';
@@ -27,7 +27,7 @@ const TAIL_MS = 120;
 const PASS_SHARE = 0.8;
 
 /** The words a lesson plays: one recording, and the letter being said while a word plays. */
-function useWords(examples: Examples | null, slow: boolean) {
+export function useWords(examples: Examples | null, slow: boolean) {
   const [now, setNow] = useState(-1);
   const [playingWord, setPlayingWord] = useState<ExampleWord | null>(null);
   const timeline = examples?.timeline;
@@ -64,7 +64,7 @@ function useWords(examples: Examples | null, slow: boolean) {
 }
 
 /** A rule's chip: its mark in its colour, its name, and its Arabic name. */
-function RuleChip({ rule, onClick, state }: { rule: TajweedRule; onClick?: () => void; state?: 'right' | 'wrong' }) {
+export function RuleChip({ rule, onClick, state }: { rule: TajweedRule; onClick?: () => void; state?: 'right' | 'wrong' }) {
   const tx = useText();
   const lang = useLang();
   const inner = (
@@ -92,7 +92,7 @@ interface GameProps {
 }
 
 /** A run of questions: find the letter with a rule, or name the rule of a marked letter. */
-function Game({ examples, rounds, practice, hints, words, onDone }: GameProps) {
+export function Game({ examples, rounds, practice, hints, words, onDone }: GameProps) {
   const tx = useText();
   const [at, setAt] = useState(0);
   const [right, setRight] = useState(0);
@@ -103,6 +103,7 @@ function Game({ examples, rounds, practice, hints, words, onDone }: GameProps) {
 
   const settle = (ok: boolean, picked: { letter?: number; rule?: TajweedRule }) => {
     if (answer) return;
+    noteAnswer(target.rule!, ok);
     if (!ok && practice && hints && tries === 0) {
       // One more try: the wrong answer shakes for a moment, then the question is open again.
       setTries(1);
@@ -316,6 +317,14 @@ export default function Lesson({ level }: { level: Level }) {
           <div className="jg-card"><p>{tx(A.offline)}</p></div>
         ) : !examples ? (
           <div className="jg-card jg-wait" role="status"><p>{tx(A.loading)}</p></div>
+        ) : step === 'meet' && level.id === 'together' ? (
+          // The last level meets nothing new: it shows every colour the child has learned, then mixes them.
+          <div className="jg-card">
+            <h2>{tx(level.name)}</h2>
+            <p className="jg-lead">{tx(level.line!)}</p>
+            <div className="jg-key">{examples.rules.map((r) => <RuleChip key={r} rule={r} />)}</div>
+            <button className="tj-pill tj-pill-go jg-next" onClick={() => go('hear')}>{tx(A.next)}<ArrowLeft size={18} strokeWidth={2.5} className="tj-flip tj-forward" /></button>
+          </div>
         ) : step === 'meet' && meetRule ? (
           <div className="jg-card jg-meet" data-rule={meetRule} key={meetRule}>
             <span className="jg-hero"><RuleMark rule={meetRule} size={44} /></span>

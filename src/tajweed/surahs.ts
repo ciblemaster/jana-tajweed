@@ -76,3 +76,13 @@ export function lessonUrl(level: string): string {
 export function profilesUrl(): string {
   return gameUrl() + (gameUrl().includes('?') ? '&' : '?') + 'profiles';
 }
+
+/** Today's short review. */
+export function missionUrl(): string {
+  return gameUrl() + (gameUrl().includes('?') ? '&' : '?') + 'mission';
+}
+
+/** The parent view, behind its grown-up check. */
+export function parentsUrl(): string {
+  return gameUrl() + (gameUrl().includes('?') ? '&' : '?') + 'parents';
+}
