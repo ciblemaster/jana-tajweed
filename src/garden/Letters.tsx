@@ -12,6 +12,7 @@ import type { ExampleWord } from './examples';
 import { useWords } from './Lesson';
 import type { Level } from './levels';
 import { ALPHABET, findLetterExamples, hasMark, makeLetterRounds, markShape, ZONES, type LetterExamples, type LetterRound, type Zone } from './sounds';
+import { tapHit } from './joining';
 import { WordView } from './WordView';
 import '../tajweed/tajweed.css';
 import './garden.css';
@@ -98,7 +99,7 @@ function LettersGame({ ex, rounds, practice, words, onDone }: GameProps) {
           marked={round.kind === 'where' ? round.letter.index : showMark && !answer!.ok ? firstWithMark : undefined}
           now={words.playingWord === round.word ? words.now : undefined}
           wrong={answer && !answer.ok ? answer.letter : undefined}
-          onLetter={round.kind === 'mark' && !finished ? (l: TajweedLetter) => settle(hasMark(l, round.mark), { letter: l.index }) : undefined}
+          onLetter={round.kind === 'mark' && !finished ? (letters: TajweedLetter[]) => { const hit = tapHit(letters, (l) => hasMark(l, round.mark)); settle(!!hit, { letter: (hit ?? letters[0]).index }); } : undefined}
         />
         <button className="tj-pill jg-listen" onClick={() => words.playWord(round.word)}><Volume2 size={18} strokeWidth={2.5} />{tx(A.listenWord)}</button>
       </div>

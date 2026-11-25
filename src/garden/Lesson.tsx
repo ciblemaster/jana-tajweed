@@ -14,6 +14,7 @@ import { useRecitation } from '../tajweed/useRecitation';
 import { useRecorder } from '../tajweed/useRecorder';
 import { findExamples, makeRounds, type ExampleWord, type Examples, type Round } from './examples';
 import type { Level } from './levels';
+import { tapHit } from './joining';
 import { WordView } from './WordView';
 import '../tajweed/tajweed.css';
 import './garden.css';
@@ -117,9 +118,10 @@ export function Game({ examples, rounds, practice, hints, words, onDone }: GameP
     words.playWord(round.word);
   };
 
-  const onLetter = (letter: TajweedLetter) => {
+  const onLetter = (letters: TajweedLetter[]) => {
     if (round.kind !== 'tap') return;
-    settle(letter.rule === round.rule, { letter: letter.index });
+    const hit = tapHit(letters, (l) => l.rule === round.rule);
+    settle(!!hit, { letter: (hit ?? letters[0]).index });
   };
 
   const next = () => {
