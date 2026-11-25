@@ -1,6 +1,7 @@
 import { ArrowLeft, Lock } from 'lucide-react';
 import { useEffect, useState, type CSSProperties, type FormEvent } from 'react';
 import { AccountPanel } from '../account/AccountPanel';
+import { KidRecordings } from './KidRecordings';
 import { TAJWEED_RULES } from '../core';
 import { APP_TEXT as A } from '../core/appTexts';
 import { ensureFonts, fontStack } from '../core/fonts';
@@ -123,6 +124,7 @@ export default function Parents() {
                     ))}
                   </div>
                 </fieldset>
+                <KidRecordings kid={kid} />
               </section>
             );
           })}

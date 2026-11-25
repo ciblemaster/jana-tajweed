@@ -146,3 +146,26 @@
 .jg-mark-shape { font-size: 34px; line-height: 1.2; }
 .jaccount-voice { display: grid; gap: 8px; padding: 12px; border-radius: 16px; background: #fffaf0; }
 .jaccount-voice h3 { display: flex; align-items: center; gap: 6px; margin: 0; font-size: 1rem; }
+
+/* A reading a grown-up asked for: first on the home screen, with one big button. */
+.jg-asked { border: 3px solid var(--tj-go); }
+.jg-asked-what { margin: 0; font-weight: 800; font-size: 1.25rem; color: var(--tj-ink); }
+.jg-asked-note { margin: 0; color: var(--tj-mute); font-style: italic; }
+.jg-asked-go { justify-content: center; min-block-size: 60px; font-size: 1.25rem; }
+
+/* The grown-ups' recordings: the setting, a reading to ask for, and what each child recorded. */
+.jparents-rec { display: grid; gap: 12px; padding-block-start: 12px; border-block-start: 2px dashed var(--tj-edge); }
+.jparents-rec h4 { margin: 0; font-size: 1rem; }
+.jparents-ask { display: grid; gap: 10px; padding: 14px; border-radius: 16px; background: #f3f5fb; }
+.jparents-ask label { display: grid; gap: 6px; }
+.jparents-ask select { block-size: 48px; padding: 0 10px; border: 3px solid var(--tj-edge); border-radius: 14px; background: #fff; font: inherit; font-size: 1.05rem; }
+.jparents-range { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.jparents-requests { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
+.jparents-request { display: grid; gap: 8px; padding: 12px; border-radius: 14px; background: #fff7e6; }
+.jparents-request[data-done] { background: #ebfbee; }
+.jparents-request-title { display: grid; gap: 2px; margin: 0; }
+.jparents-request-title span { color: var(--tj-mute); font-weight: 700; font-size: 0.9rem; }
+.jparents-takes { display: flex; flex-wrap: wrap; gap: 8px; }
+.jparents-work p { margin: 0 0 4px; font-weight: 800; }
+.jparents-work ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 4px; }
+.jparents-words { font-size: 1.3rem; color: #c2410c; }

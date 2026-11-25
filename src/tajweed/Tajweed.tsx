@@ -10,7 +10,10 @@ import { ayahOf, AYAHS, DISPLAY_FONT, HAS_CHILDREN, lastWordEndedBy, leadRule, M
 import { GAME_SURAHS, gameUrl, surahInfo, surahName } from './surahs';
 import { useRecitation } from './useRecitation';
 import { useRecorder } from './useRecorder';
-import { VoiceCheck } from './VoiceCheck';
+import { checkVerse, VoiceCheck, VoiceResultView } from './VoiceCheck';
+import { getRequest, mayRecord, noteRecorded, requestFromUrl, updateRequest, type VerseCheck } from '../parents/requests';
+import { saveTake } from '../parents/recordings';
+import { APP_TEXT as A } from '../core/appTexts';
 import { voiceAvailable, voiceOn } from '../account/voice';
 import { bandRules, currentProfile } from '../profiles/store';
 import './tajweed.css';
@@ -57,8 +60,14 @@ export default function Tajweed() {
   const [stops, setStops] = useState(false);
   const [completed, setCompleted] = useState(NONE_DONE);
   const [finished, setFinished] = useState(false);
+  /** A reading a grown-up asked for (?request=…): the only time the microphone is offered, unless they allowed it always. */
+  const kidId = currentProfile()?.id;
+  const [request, setRequest] = useState(() => requestFromUrl(kidId));
+  const [canRecord] = useState(() => mayRecord(kidId, requestFromUrl(kidId), SURAH));
+  /** The voice check of each verse of the request recorded here: being heard, heard, or not heard (no service). */
+  const [checks, setChecks] = useState<Map<number, VerseCheck | 'checking' | 'none'>>(new Map());
   /** After each verse the recording waits for the child to recite it alone; on by default where children repeat. */
-  const [myTurn, setMyTurn] = useState(HAS_CHILDREN || MODE === 'memorise');
+  const [myTurn, setMyTurn] = useState(HAS_CHILDREN || MODE === 'memorise' || !!request);
   const [turn, setTurn] = useState<Turn | null>(null);
   /** Memorising: the verses recited from memory, and whether the child asked to see the covered verse. */
   const [known, setKnown] = useState(NONE_DONE);
@@ -167,9 +176,12 @@ export default function Tajweed() {
   const recorder = useRecorder();
   /** Voice feedback, when a grown-up turned it on and the server can check recordings. */
   const [voice, setVoice] = useState(false);
+  const [voiceReady, setVoiceReady] = useState(false);
   useEffect(() => {
     if (voiceOn()) void voiceAvailable().then(setVoice);
-  }, []);
+    // A requested reading is checked whenever the service answers; without it the grown-up sees "not checked yet".
+    if (request) void voiceAvailable().then(setVoiceReady);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const { playing, status, play, pause, seek, setRate, retry } = recitation;
   pauseRef.current = pause;
 
@@ -249,6 +261,14 @@ export default function Tajweed() {
     goTo(0, true);
   }, [goTo]);
 
+  // A requested reading starts at its first verse, with the microphone on.
+  useEffect(() => {
+    if (!request || !canRecord) return;
+    const at = AYAHS.findIndex((a) => a.ayah === request.from);
+    if (at > 0) goTo(AYAHS[at].first, false);
+    void recorder.enable().then((ok) => ok && setRecordOn(true));
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   // The surah is finished: its stars are kept on this device, and any award they win is announced once.
   useEffect(() => {
     if (!finished || TRIAL) return;
@@ -281,10 +301,25 @@ export default function Tajweed() {
         return next;
       });
     }
+    if (take) void keepRef.current(ended.ayah, take);
     if (MODE === 'memorise') setTurn({ ...ended, phase: 'check' });
     else if (take) setTurn({ ...ended, phase: 'compare' });
     else endTurn(ended);
   }, [endTurn, recorder.stop]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  /** A verse of the requested reading: kept for the grown-up, then heard by the voice check when it can be. */
+  const keepForRequest = async (ayahAt: number, take: Blob) => {
+    const n = AYAHS[ayahAt].ayah;
+    if (!kidId || !request || n < request.from || n > request.to) return;
+    await saveTake(request.id, n, take);
+    setChecks((all) => new Map(all).set(ayahAt, voiceReady ? 'checking' : 'none'));
+    const heard = voiceReady ? await checkVerse(TIMELINE, AYAHS[ayahAt].first, n, take) : null;
+    setChecks((all) => new Map(all).set(ayahAt, heard ?? 'none'));
+    updateRequest(kidId, request.id, (r) => noteRecorded(r, n, heard));
+    setRequest(getRequest(kidId, request.id));
+  };
+  const keepRef = useRef(keepForRequest);
+  keepRef.current = keepForRequest;
 
   /** Stops whatever the comparison is playing. */
   const hush = useCallback(() => {
@@ -594,7 +629,12 @@ export default function Tajweed() {
                     <button className="tj-pill tj-hear" aria-pressed={hearing === 'me'} onClick={() => (hearing === 'me' ? hush() : hearMe(turn.ayah))}><Mic size={18} strokeWidth={2.5} />{tx(T.listenMe)}</button>
                     <button className="tj-pill tj-hear" aria-pressed={hearing === 'sheikh'} onClick={() => (hearing === 'sheikh' ? hush() : hearSheikh(turn.ayah))}><User size={18} strokeWidth={2.5} />{tx(T.listenSheikh)}</button>
                   </div>
-                  {voice && takes.has(turn.ayah) && <VoiceCheck key={`${turn.ayah}-${takes.get(turn.ayah)}`} timeline={TIMELINE} verseIndex={AYAHS[turn.ayah].first} takeUrl={takes.get(turn.ayah)!} />}
+                  {checks.get(turn.ayah) === 'checking' && <p className="tj-voice-tip" aria-live="polite">{tx(A.checking)}</p>}
+                  {typeof checks.get(turn.ayah) === 'object' && (
+                    <div className="tj-voice" aria-live="polite"><VoiceResultView {...(checks.get(turn.ayah) as VerseCheck)} /></div>
+                  )}
+                  {request?.recordedAt && checks.has(turn.ayah) && <p className="tj-voice-tip" role="status">{tx(A.requestDone)}</p>}
+                  {voice && !checks.has(turn.ayah) && takes.has(turn.ayah) && <VoiceCheck key={`${turn.ayah}-${takes.get(turn.ayah)}`} timeline={TIMELINE} verseIndex={AYAHS[turn.ayah].first} takeUrl={takes.get(turn.ayah)!} />}
                   <div className="tj-check">
                     <button className="tj-pill" onClick={() => compareDone(true)}><RotateCcw size={18} strokeWidth={2.5} />{tx(T.recordAgain)}</button>
                     <button className="tj-pill tj-pill-go" onClick={() => compareDone(false)}><Check size={20} strokeWidth={3} />{tx(T.nextVerse)}</button>
@@ -669,7 +709,8 @@ export default function Tajweed() {
             <button className="tj-btn tj-toggle" onClick={() => setSlow((s) => !s)} aria-pressed={slow} aria-label={tx(T.slow)} title={tx(T.slow)}><Turtle size={26} strokeWidth={2.2} /></button>
           </div>
           <div className="tj-options">
-            {(myTurn || MODE === 'memorise') && (
+            {(myTurn || MODE === 'memorise') && !canRecord && <p className="jg-ask-hint">{tx(A.askGrownUp)}</p>}
+            {(myTurn || MODE === 'memorise') && canRecord && (
               <button className="tj-pill tj-toggle tj-stops tj-record" onClick={() => void toggleRecord()} aria-pressed={recordOn} disabled={recorder.status === 'asking'}>
                 <span className="tj-switch" aria-hidden />{recordOn ? <Mic size={18} strokeWidth={2.5} aria-hidden /> : <MicOff size={18} strokeWidth={2.5} aria-hidden />}{tx(T.recordMe)}
               </button>
