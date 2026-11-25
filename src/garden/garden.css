@@ -149,8 +149,8 @@
 
 /* A reading a grown-up asked for: first on the home screen, with one big button. */
 .jg-asked { border: 3px solid var(--tj-go); }
-.jg-asked-what { margin: 0; font-weight: 800; font-size: 1.25rem; color: var(--tj-ink); }
-.jg-asked-note { margin: 0; color: var(--tj-mute); font-style: italic; }
+.jg-asked .jg-asked-what { margin: 0; font-weight: 800; font-size: 1.25rem; color: var(--tj-ink); }
+.jg-asked .jg-asked-note { margin: 0; color: var(--tj-mute); font-style: italic; }
 .jg-asked-go { justify-content: center; min-block-size: 60px; font-size: 1.25rem; }
 
 /* The grown-ups' recordings: the setting, a reading to ask for, and what each child recorded. */
