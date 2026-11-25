@@ -54,7 +54,9 @@ export function gameUrl(surah?: number, mode: Mode = 'learn'): string {
   if (lang) url.searchParams.set('lang', lang);
   if (surah) url.searchParams.set('surah', String(surah));
   if (surah && mode === 'memorise') url.searchParams.set('mode', mode);
-  return url.pathname + url.search;
+  // Inside the iPhone app the page is capacitor://localhost, whose path is empty: an empty link would only reload the
+  // page it is on (a back arrow that started the mission again). The home of the app is always '/'.
+  return (url.pathname || '/') + url.search;
 }
 
 // Each surah's letters and times are fetched only when it is opened.
