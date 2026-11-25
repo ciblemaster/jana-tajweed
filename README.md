@@ -37,6 +37,14 @@ npm run build      # type check + production build in dist/
 
 Audio streams from download.quranicaudio.com. Check its terms before a public release, or host the files.
 
+## Web: quranvideomaker.com/janatajweed
+
+`BASE_PATH=/janatajweed npm run build` builds the app to be served under that path (fonts, icons, the install
+manifest, the service worker and `/api` calls all follow it). `deploy/deploy.sh` does that and copies `dist/` to
+`/var/www/janatajweed` on the quranvideomaker.com server; Apache serves the folder with the lines in
+`deploy/apache-janatajweed.conf` (added once). Only the app itself goes there: accounts and voice feedback need
+`server/` running behind `/janatajweed/api`, which is not set up yet.
+
 ## Server: accounts and sync (optional)
 
 The app works fully on one device without any server. A grown-up can create an account on the grown-ups' page

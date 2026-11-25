@@ -2,7 +2,11 @@ import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vite';
 import { VitePWA } from 'vite-plugin-pwa';
 
+// BASE_PATH=/janatajweed serves the web app under that path (quranvideomaker.com/janatajweed). Unset: the site root.
+const base = `${(process.env.BASE_PATH ?? '').replace(/\/$/, '')}/`;
+
 export default defineConfig({
+  base,
   plugins: [
     react(),
     // Installable, and the app itself (screens, the 38 surahs' letters, fonts) works offline. The recitations stream
@@ -19,8 +23,8 @@ export default defineConfig({
         description: 'Learn tajweed and recite the Quran, letter by letter. For children aged 4 to 12.',
         lang: 'en',
         dir: 'auto',
-        start_url: '/',
-        scope: '/',
+        start_url: base,
+        scope: base,
         display: 'standalone',
         orientation: 'portrait',
         background_color: '#fff7e6',
@@ -33,9 +37,9 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,woff2,woff,png,svg}'],
-        navigateFallback: '/index.html',
+        navigateFallback: `${base}index.html`,
         // The server's answers are never cached or replaced by the app's page.
-        navigateFallbackDenylist: [/^\/api\//]
+        navigateFallbackDenylist: [new RegExp(`^${base}api/`)]
       }
     })
   ],
