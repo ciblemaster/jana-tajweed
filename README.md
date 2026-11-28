@@ -72,7 +72,10 @@ cd server && TEST_DATABASE_URL=postgres://localhost/jana_test npm test
 With a grown-up's account, voice feedback can be turned on per device on the grown-ups' page. After a child recites a
 verse with "Record me" on, "Check my reading" sends that one take to the server, which passes it to the speech service
 and keeps nothing. Each word then shows green (clear), orange (almost, or a long sound held too short) or grey
-(say it again), with one tip. Scoring is in `src/core/tajweed/feedback.ts`.
+(say it again), with one tip. With voice feedback on, every verse the child records is checked as they go, and when
+the surah ends the child sees "Your corrections": each verse with something to fix, the words to say again or sounds
+to hold longer, a button to hear the sheikh say that word, and one to practise the verse again
+(`src/tajweed/Corrections.tsx`). Scoring is in `src/core/tajweed/feedback.ts`.
 
 The speech service is `scripts/tajweed/serve.py` (Meta's MMS aligner, the same as `align.py`):
 
