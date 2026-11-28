@@ -1,4 +1,4 @@
-import { BookOpen, Brain, CheckCircle2, Circle, Flame, Lock, Medal, Play, Sprout, Star, Target, Trophy, X } from 'lucide-react';
+import { BookOpen, Brain, CheckCircle2, Circle, Flame, Lock, Medal, Mic, Play, Sprout, Star, Target, Trophy, X } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { ensureFonts, fontStack } from '../core/fonts';
 import { fill, LANG_NAMES, LANGS, setLang, useLang, useText, type Lang } from '../core/lang';
@@ -10,6 +10,8 @@ import { APP_TEXT as A } from '../core/appTexts';
 import { LEVELS, levelOpen, missionRule, playable } from '../garden/levels';
 import { Avatar } from '../profiles/Avatar';
 import { currentProfile } from '../profiles/store';
+import { openRequest } from '../parents/requests';
+import { requestText } from '../parents/requestText';
 import { RuleMark } from './letters';
 import '../garden/garden.css';
 import { DISPLAY_FONT } from './theme';
@@ -76,6 +78,7 @@ export default function TajweedMap() {
   const pickedAt = picked ? GAME_SURAHS.findIndex((s) => s.n === picked.n) : -1;
   const pickedOpen = picked ? isOpen(progress, picked.n) : false;
   const kid = currentProfile();
+  const asked = kid ? openRequest(kid.id) : undefined;
   const mission = missionToday(progress);
   const todayRule = missionRule(progress);
   // The next level to play; Level 0 only for a child who has not started the rules.
@@ -98,6 +101,15 @@ export default function TajweedMap() {
           <span className="tj-score-chip tj-score-days" title={tx(T.daysInRow)}><Flame size={20} strokeWidth={2.5} aria-hidden /><b>{streak(progress)}</b><span className="tj-sr">{tx(T.daysInRow)}</span></span>
         </div>
       </header>
+
+      {asked && (
+        <section className="jg-garden jg-asked" aria-labelledby="jg-asked-title">
+          <h2 id="jg-asked-title"><Mic size={20} strokeWidth={2.5} aria-hidden />{tx(A.askedTitle)}</h2>
+          <p className="jg-asked-what">{requestText(asked, lang, tx)}</p>
+          {asked.note && <p className="jg-asked-note">“{asked.note}”</p>}
+          <a className="tj-pill tj-pill-go jg-asked-go" href={`${gameUrl(asked.surah)}&request=${asked.id}`}><Play size={22} strokeWidth={0} fill="currentColor" />{tx(A.startReading)}</a>
+        </section>
+      )}
 
       <section className="jg-garden jg-mission" aria-labelledby="jg-mission-title">
         <h2 id="jg-mission-title"><Target size={20} strokeWidth={2.5} aria-hidden />{tx(A.mission)}</h2>

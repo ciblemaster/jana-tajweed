@@ -10,7 +10,11 @@ import { ayahOf, AYAHS, DISPLAY_FONT, HAS_CHILDREN, lastWordEndedBy, leadRule, M
 import { GAME_SURAHS, gameUrl, surahInfo, surahName } from './surahs';
 import { useRecitation } from './useRecitation';
 import { useRecorder } from './useRecorder';
-import { VoiceCheck } from './VoiceCheck';
+import { checkVerse, VoiceCheck, VoiceResultView } from './VoiceCheck';
+import { Corrections } from './Corrections';
+import { getRequest, mayRecord, noteRecorded, requestFromUrl, updateRequest, type VerseCheck } from '../parents/requests';
+import { saveTake } from '../parents/recordings';
+import { APP_TEXT as A } from '../core/appTexts';
 import { voiceAvailable, voiceOn } from '../account/voice';
 import { bandRules, currentProfile } from '../profiles/store';
 import './tajweed.css';
@@ -57,13 +61,26 @@ export default function Tajweed() {
   const [stops, setStops] = useState(false);
   const [completed, setCompleted] = useState(NONE_DONE);
   const [finished, setFinished] = useState(false);
+  /** A reading a grown-up asked for (?request=…): the only time the microphone is offered, unless they allowed it always. */
+  const kidId = currentProfile()?.id;
+  const [request, setRequest] = useState(() => requestFromUrl(kidId));
+  const [canRecord] = useState(() => mayRecord(kidId, requestFromUrl(kidId), SURAH));
+  /** The voice check of each verse recorded here (a requested reading, or any verse with voice feedback on): being
+   * heard, heard, or not heard (no service). Shown verse by verse, and all together as corrections at the end. */
+  const [checks, setChecks] = useState<Map<number, VerseCheck | 'checking' | 'none'>>(new Map());
   /** After each verse the recording waits for the child to recite it alone; on by default where children repeat. */
-  const [myTurn, setMyTurn] = useState(HAS_CHILDREN || MODE === 'memorise');
+  const [myTurn, setMyTurn] = useState(HAS_CHILDREN || MODE === 'memorise' || !!request);
   const [turn, setTurn] = useState<Turn | null>(null);
   /** Memorising: the verses recited from memory, and whether the child asked to see the covered verse. */
   const [known, setKnown] = useState(NONE_DONE);
   const [peeking, setPeeking] = useState(false);
   const [result, setResult] = useState<Result | null>(null);
+  /** The sheikh's word playing from the corrections, as `verse:word`. */
+  const [hearingWord, setHearingWord] = useState<string | null>(null);
+  /** The verse practised again from the corrections: its turn over, the corrections come back. */
+  const practising = useRef<number | null>(null);
+  /** The newest take of each verse, so an older take heard late does not replace the newer one's check. */
+  const takeSeq = useRef(new Map<number, number>());
   /** The coloured letter whose card is open. */
   const [card, setCard] = useState<number | null>(null);
   const [listening, setListening] = useState(false);
@@ -167,9 +184,12 @@ export default function Tajweed() {
   const recorder = useRecorder();
   /** Voice feedback, when a grown-up turned it on and the server can check recordings. */
   const [voice, setVoice] = useState(false);
+  const [voiceReady, setVoiceReady] = useState(false);
   useEffect(() => {
     if (voiceOn()) void voiceAvailable().then(setVoice);
-  }, []);
+    // A requested reading is checked whenever the service answers; without it the grown-up sees "not checked yet".
+    if (request) void voiceAvailable().then(setVoiceReady);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const { playing, status, play, pause, seek, setRate, retry } = recitation;
   pauseRef.current = pause;
 
@@ -242,12 +262,22 @@ export default function Tajweed() {
   }, [pause, play, seek]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const restart = useCallback(() => {
+    practising.current = null;
+    setChecks(new Map());
     setCompleted(NONE_DONE);
     setKnown(NONE_DONE);
     turnsTaken.current.clear();
     setResult(null);
     goTo(0, true);
   }, [goTo]);
+
+  // A requested reading starts at its first verse, with the microphone on.
+  useEffect(() => {
+    if (!request || !canRecord) return;
+    const at = AYAHS.findIndex((a) => a.ayah === request.from);
+    if (at > 0) goTo(AYAHS[at].first, false);
+    void recorder.enable().then((ok) => ok && setRecordOn(true));
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // The surah is finished: its stars are kept on this device, and any award they win is announced once.
   useEffect(() => {
@@ -264,9 +294,13 @@ export default function Tajweed() {
   const endTurn = useCallback((ended: Turn) => {
     turnsTaken.current.add(ended.ayah);
     setTurn(null);
-    if (ended.then === 'finish') setFinished(true);
+    if (practising.current === ended.ayah) {
+      practising.current = null;
+      pause();
+      setFinished(true);
+    } else if (ended.then === 'finish') setFinished(true);
     else play({ fromMs: mainMs.current });
-  }, [play]);
+  }, [pause, play]);
 
   /** The time to recite is up. When memorising, the verse is shown and the child says how it went. */
   const reciteOver = useCallback(async (ended: Turn) => {
@@ -281,10 +315,35 @@ export default function Tajweed() {
         return next;
       });
     }
+    if (take) void keepRef.current(ended.ayah, take);
     if (MODE === 'memorise') setTurn({ ...ended, phase: 'check' });
     else if (take) setTurn({ ...ended, phase: 'compare' });
     else endTurn(ended);
   }, [endTurn, recorder.stop]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  /**
+   * A verse the child recited. In the requested reading it is kept for the grown-up; there, or anywhere with voice
+   * feedback on, it is heard by the voice check when it can be, for the verse's result and the corrections at the end.
+   */
+  const keepTake = async (ayahAt: number, take: Blob) => {
+    const n = AYAHS[ayahAt].ayah;
+    const asked = !!kidId && !!request && n >= request.from && n <= request.to;
+    const canCheck = asked ? voiceReady : voice;
+    if (!asked && !canCheck) return;
+    const seq = (takeSeq.current.get(ayahAt) ?? 0) + 1;
+    takeSeq.current.set(ayahAt, seq);
+    if (asked) await saveTake(request!.id, n, take);
+    setChecks((all) => new Map(all).set(ayahAt, canCheck ? 'checking' : 'none'));
+    const heard = canCheck ? await checkVerse(TIMELINE, AYAHS[ayahAt].first, n, take) : null;
+    if (takeSeq.current.get(ayahAt) !== seq) return;
+    setChecks((all) => new Map(all).set(ayahAt, heard ?? 'none'));
+    if (asked) {
+      updateRequest(kidId!, request!.id, (r) => noteRecorded(r, n, heard));
+      setRequest(getRequest(kidId!, request!.id));
+    }
+  };
+  const keepRef = useRef(keepTake);
+  keepRef.current = keepTake;
 
   /** Stops whatever the comparison is playing. */
   const hush = useCallback(() => {
@@ -331,6 +390,37 @@ export default function Tajweed() {
       }
     });
   }, [hush, play]);
+
+  /** Plays the sheikh saying one word of a verse, from the corrections. */
+  const hearWord = useCallback((ayahAt: number, w: number) => {
+    const key = `${ayahAt}:${w}`;
+    takeAudio.current?.pause();
+    if (hearingWord === key) {
+      pause();
+      mode.current = 'main';
+      return setHearingWord(null);
+    }
+    const word = TIMELINE.verses[AYAHS[ayahAt].first].words[w];
+    if (!word) return;
+    mode.current = 'word';
+    setHearingWord(key);
+    play({
+      fromMs: word.startMs - WORD_LEAD_MS,
+      untilMs: word.endMs + WORD_TAIL_MS,
+      onDone: () => {
+        mode.current = 'main';
+        setSoundNow(-1);
+        setHearingWord(null);
+      }
+    });
+  }, [hearingWord, pause, play]);
+
+  /** From the corrections: the verse again, with the child's turn after it, then back to the corrections. */
+  const practise = useCallback((ayahAt: number) => {
+    setHearingWord(null);
+    goTo(AYAHS[ayahAt].first, true);
+    practising.current = ayahAt;
+  }, [goTo]); // eslint-disable-line react-hooks/exhaustive-deps
 
   /** Done comparing: on to the next verse, or record the verse again. */
   const compareDone = useCallback((again: boolean) => {
@@ -379,6 +469,7 @@ export default function Tajweed() {
 
   /** Moves a verse back or forward, or replays this one. */
   const goAyah = useCallback((step: number, autoplay: boolean) => {
+    practising.current = null;
     const to = ayahOf(onVerse.current) + step;
     if (to >= 0 && to < AYAHS.length) goTo(AYAHS[to].first, autoplay);
   }, [goTo]);
@@ -594,7 +685,12 @@ export default function Tajweed() {
                     <button className="tj-pill tj-hear" aria-pressed={hearing === 'me'} onClick={() => (hearing === 'me' ? hush() : hearMe(turn.ayah))}><Mic size={18} strokeWidth={2.5} />{tx(T.listenMe)}</button>
                     <button className="tj-pill tj-hear" aria-pressed={hearing === 'sheikh'} onClick={() => (hearing === 'sheikh' ? hush() : hearSheikh(turn.ayah))}><User size={18} strokeWidth={2.5} />{tx(T.listenSheikh)}</button>
                   </div>
-                  {voice && takes.has(turn.ayah) && <VoiceCheck key={`${turn.ayah}-${takes.get(turn.ayah)}`} timeline={TIMELINE} verseIndex={AYAHS[turn.ayah].first} takeUrl={takes.get(turn.ayah)!} />}
+                  {checks.get(turn.ayah) === 'checking' && <p className="tj-voice-tip" aria-live="polite">{tx(A.checking)}</p>}
+                  {typeof checks.get(turn.ayah) === 'object' && (
+                    <div className="tj-voice" aria-live="polite"><VoiceResultView {...(checks.get(turn.ayah) as VerseCheck)} /></div>
+                  )}
+                  {request?.recordedAt && checks.has(turn.ayah) && <p className="tj-voice-tip" role="status">{tx(A.requestDone)}</p>}
+                  {voice && !checks.has(turn.ayah) && takes.has(turn.ayah) && <VoiceCheck key={`${turn.ayah}-${takes.get(turn.ayah)}`} timeline={TIMELINE} verseIndex={AYAHS[turn.ayah].first} takeUrl={takes.get(turn.ayah)!} />}
                   <div className="tj-check">
                     <button className="tj-pill" onClick={() => compareDone(true)}><RotateCcw size={18} strokeWidth={2.5} />{tx(T.recordAgain)}</button>
                     <button className="tj-pill tj-pill-go" onClick={() => compareDone(false)}><Check size={20} strokeWidth={3} />{tx(T.nextVerse)}</button>
@@ -648,6 +744,15 @@ export default function Tajweed() {
                 {result?.awards.map((id) => (
                   <p key={id} className="tj-new-award"><Medal size={20} strokeWidth={2.5} aria-hidden /><strong>{tx(T.newAward)}</strong> {tx(AWARD_TEXT[id].name)}</p>
                 ))}
+                {[...checks.values()].some((c) => c !== 'none') && (
+                  <Corrections
+                    checks={[...checks.entries()].filter((e): e is [number, VerseCheck] => typeof e[1] === 'object').sort((a, b) => a[0] - b[0])}
+                    waiting={[...checks.values()].includes('checking')}
+                    hearing={hearingWord}
+                    onHear={hearWord}
+                    onPractise={practise}
+                  />
+                )}
                 <div className="tj-done-actions">
                   {!TRIAL && nextSurah && result && isOpen(result.progress, nextSurah.n) && (
                     <a className="tj-pill tj-pill-go" href={gameUrl(nextSurah.n)}>{tx(T.nextSurah)}<ArrowLeft size={18} strokeWidth={2.5} className="tj-flip tj-forward" /></a>
@@ -669,7 +774,8 @@ export default function Tajweed() {
             <button className="tj-btn tj-toggle" onClick={() => setSlow((s) => !s)} aria-pressed={slow} aria-label={tx(T.slow)} title={tx(T.slow)}><Turtle size={26} strokeWidth={2.2} /></button>
           </div>
           <div className="tj-options">
-            {(myTurn || MODE === 'memorise') && (
+            {(myTurn || MODE === 'memorise') && !canRecord && <p className="jg-ask-hint">{tx(A.askGrownUp)}</p>}
+            {(myTurn || MODE === 'memorise') && canRecord && (
               <button className="tj-pill tj-toggle tj-stops tj-record" onClick={() => void toggleRecord()} aria-pressed={recordOn} disabled={recorder.status === 'asking'}>
                 <span className="tj-switch" aria-hidden />{recordOn ? <Mic size={18} strokeWidth={2.5} aria-hidden /> : <MicOff size={18} strokeWidth={2.5} aria-hidden />}{tx(T.recordMe)}
               </button>

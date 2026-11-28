@@ -55,6 +55,21 @@ describe('Voice feedback (timing)', () => {
     expect(r.tip).toEqual({ kind: 'say', word: 3 });
   });
 
+  it('lists every correction, most needed first', () => {
+    const heard = recite(300, 1);
+    heard[8] = { ...heard[8]!, score: 0.1 };
+    heard[9] = { ...heard[9]!, score: 0.1 };
+    heard[10] = { ...heard[10]!, score: 0.1 };
+    heard[0] = { ...heard[0]!, score: 0.3 };
+    heard[1] = { ...heard[1]!, score: 0.3 };
+    const r = judgeRecitation(verse, heard);
+    expect(r.fixes.map((f) => [f.kind, f.word])).toEqual([['say', 3], ['hold', 2], ['almost', 0]]);
+  });
+
+  it('has nothing to correct in a clear verse', () => {
+    expect(judgeRecitation(verse, recite(300, 2)).fixes).toEqual([]);
+  });
+
   it('calls a word almost when the aligner is unsure of it', () => {
     expect(judgeRecitation(verse, recite(300, 2, 0.3)).words).toEqual(['almost', 'almost', 'almost', 'almost']);
   });

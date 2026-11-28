@@ -15,6 +15,7 @@ import { useRecorder } from '../tajweed/useRecorder';
 import { findExamples, makeRounds, type ExampleWord, type Examples, type Round } from './examples';
 import type { Level } from './levels';
 import { tapHit } from './joining';
+import { mayRecord } from '../parents/requests';
 import { WordView } from './WordView';
 import '../tajweed/tajweed.css';
 import './garden.css';
@@ -186,6 +187,8 @@ export function Game({ examples, rounds, practice, hints, words, onDone }: GameP
 function SayIt({ examples, words, onDone }: { examples: Examples; words: ReturnType<typeof useWords>; onDone: () => void }) {
   const tx = useText();
   const recorder = useRecorder();
+  // Recording here only when a grown-up allowed it at any time: otherwise it waits for a reading they ask for.
+  const [canRecord] = useState(() => mayRecord(currentProfile()?.id, undefined));
   const word = examples.words[0];
   const [take, setTake] = useState<string | null>(null);
   const audio = useRef<HTMLAudioElement | null>(null);
@@ -229,11 +232,14 @@ function SayIt({ examples, words, onDone }: { examples: Examples; words: ReturnT
       </div>
       <div className="jg-say-actions">
         <button className="tj-pill" onClick={() => words.playWord(word)}><User size={18} strokeWidth={2.5} />{tx(A.listenWord)}</button>
-        <button className={recorder.status === 'recording' ? 'tj-pill jg-recording' : 'tj-pill'} onClick={() => void record()} disabled={recorder.status === 'asking' || recorder.status === 'denied'}>
-          {recorder.status === 'recording' ? <><Square size={16} strokeWidth={0} fill="currentColor" />{tx(A.stop)}</> : <><Mic size={18} strokeWidth={2.5} />{tx(A.record)}</>}
-        </button>
+        {canRecord && (
+          <button className={recorder.status === 'recording' ? 'tj-pill jg-recording' : 'tj-pill'} onClick={() => void record()} disabled={recorder.status === 'asking' || recorder.status === 'denied'}>
+            {recorder.status === 'recording' ? <><Square size={16} strokeWidth={0} fill="currentColor" />{tx(A.stop)}</> : <><Mic size={18} strokeWidth={2.5} />{tx(A.record)}</>}
+          </button>
+        )}
         {take && <button className="tj-pill" onClick={hearMe}><Play size={18} strokeWidth={2.5} fill="currentColor" />{tx({ en: 'My voice', ar: 'صوتي', fr: 'Ma voix' })}</button>}
       </div>
+      {!canRecord && <p className="jg-ask-hint">{tx(A.askGrownUp)}</p>}
       {recorder.status === 'denied' && <p className="tj-mic-off" role="alert">{tx({ en: 'The microphone is off. Ask a grown-up to allow it in the browser settings.', ar: 'الميكروفون مغلق. اطلب من أحد الكبار السماح به في إعدادات المتصفح.', fr: 'Le micro est coupé. Demande à un adulte de l’autoriser dans le navigateur.' })}</p>}
       <button className="tj-pill tj-pill-go jg-next" onClick={onDone}>{tx(take ? A.next : A.skip)}<ArrowLeft size={18} strokeWidth={2.5} className="tj-flip tj-forward" /></button>
     </div>

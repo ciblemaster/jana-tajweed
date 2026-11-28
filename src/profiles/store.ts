@@ -1,3 +1,5 @@
+import { forgetChild } from '../parents/requests';
+
 /** The age bands of the plan: how much text, hinting and challenge a child gets. */
 export type Band = 'little' | 'young' | 'junior';
 export const BANDS: Band[] = ['little', 'young', 'junior'];
@@ -91,6 +93,7 @@ export function removeProfile(id: string) {
   const store = load();
   const profiles = store.profiles.filter((p) => p.id !== id);
   write({ profiles, current: store.current === id ? (profiles[0]?.id ?? null) : store.current });
+  forgetChild(id);
   try {
     localStorage.removeItem(progressKey(id));
   } catch {
