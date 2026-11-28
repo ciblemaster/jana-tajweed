@@ -11,6 +11,7 @@ import { GAME_SURAHS, gameUrl, surahInfo, surahName } from './surahs';
 import { useRecitation } from './useRecitation';
 import { useRecorder } from './useRecorder';
 import { checkVerse, VoiceCheck, VoiceResultView } from './VoiceCheck';
+import { Corrections } from './Corrections';
 import { getRequest, mayRecord, noteRecorded, requestFromUrl, updateRequest, type VerseCheck } from '../parents/requests';
 import { saveTake } from '../parents/recordings';
 import { APP_TEXT as A } from '../core/appTexts';
@@ -64,7 +65,8 @@ export default function Tajweed() {
   const kidId = currentProfile()?.id;
   const [request, setRequest] = useState(() => requestFromUrl(kidId));
   const [canRecord] = useState(() => mayRecord(kidId, requestFromUrl(kidId), SURAH));
-  /** The voice check of each verse of the request recorded here: being heard, heard, or not heard (no service). */
+  /** The voice check of each verse recorded here (a requested reading, or any verse with voice feedback on): being
+   * heard, heard, or not heard (no service). Shown verse by verse, and all together as corrections at the end. */
   const [checks, setChecks] = useState<Map<number, VerseCheck | 'checking' | 'none'>>(new Map());
   /** After each verse the recording waits for the child to recite it alone; on by default where children repeat. */
   const [myTurn, setMyTurn] = useState(HAS_CHILDREN || MODE === 'memorise' || !!request);
@@ -73,6 +75,12 @@ export default function Tajweed() {
   const [known, setKnown] = useState(NONE_DONE);
   const [peeking, setPeeking] = useState(false);
   const [result, setResult] = useState<Result | null>(null);
+  /** The sheikh's word playing from the corrections, as `verse:word`. */
+  const [hearingWord, setHearingWord] = useState<string | null>(null);
+  /** The verse practised again from the corrections: its turn over, the corrections come back. */
+  const practising = useRef<number | null>(null);
+  /** The newest take of each verse, so an older take heard late does not replace the newer one's check. */
+  const takeSeq = useRef(new Map<number, number>());
   /** The coloured letter whose card is open. */
   const [card, setCard] = useState<number | null>(null);
   const [listening, setListening] = useState(false);
@@ -254,6 +262,8 @@ export default function Tajweed() {
   }, [pause, play, seek]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const restart = useCallback(() => {
+    practising.current = null;
+    setChecks(new Map());
     setCompleted(NONE_DONE);
     setKnown(NONE_DONE);
     turnsTaken.current.clear();
@@ -284,9 +294,13 @@ export default function Tajweed() {
   const endTurn = useCallback((ended: Turn) => {
     turnsTaken.current.add(ended.ayah);
     setTurn(null);
-    if (ended.then === 'finish') setFinished(true);
+    if (practising.current === ended.ayah) {
+      practising.current = null;
+      pause();
+      setFinished(true);
+    } else if (ended.then === 'finish') setFinished(true);
     else play({ fromMs: mainMs.current });
-  }, [play]);
+  }, [pause, play]);
 
   /** The time to recite is up. When memorising, the verse is shown and the child says how it went. */
   const reciteOver = useCallback(async (ended: Turn) => {
@@ -307,19 +321,29 @@ export default function Tajweed() {
     else endTurn(ended);
   }, [endTurn, recorder.stop]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  /** A verse of the requested reading: kept for the grown-up, then heard by the voice check when it can be. */
-  const keepForRequest = async (ayahAt: number, take: Blob) => {
+  /**
+   * A verse the child recited. In the requested reading it is kept for the grown-up; there, or anywhere with voice
+   * feedback on, it is heard by the voice check when it can be, for the verse's result and the corrections at the end.
+   */
+  const keepTake = async (ayahAt: number, take: Blob) => {
     const n = AYAHS[ayahAt].ayah;
-    if (!kidId || !request || n < request.from || n > request.to) return;
-    await saveTake(request.id, n, take);
-    setChecks((all) => new Map(all).set(ayahAt, voiceReady ? 'checking' : 'none'));
-    const heard = voiceReady ? await checkVerse(TIMELINE, AYAHS[ayahAt].first, n, take) : null;
+    const asked = !!kidId && !!request && n >= request.from && n <= request.to;
+    const canCheck = asked ? voiceReady : voice;
+    if (!asked && !canCheck) return;
+    const seq = (takeSeq.current.get(ayahAt) ?? 0) + 1;
+    takeSeq.current.set(ayahAt, seq);
+    if (asked) await saveTake(request!.id, n, take);
+    setChecks((all) => new Map(all).set(ayahAt, canCheck ? 'checking' : 'none'));
+    const heard = canCheck ? await checkVerse(TIMELINE, AYAHS[ayahAt].first, n, take) : null;
+    if (takeSeq.current.get(ayahAt) !== seq) return;
     setChecks((all) => new Map(all).set(ayahAt, heard ?? 'none'));
-    updateRequest(kidId, request.id, (r) => noteRecorded(r, n, heard));
-    setRequest(getRequest(kidId, request.id));
+    if (asked) {
+      updateRequest(kidId!, request!.id, (r) => noteRecorded(r, n, heard));
+      setRequest(getRequest(kidId!, request!.id));
+    }
   };
-  const keepRef = useRef(keepForRequest);
-  keepRef.current = keepForRequest;
+  const keepRef = useRef(keepTake);
+  keepRef.current = keepTake;
 
   /** Stops whatever the comparison is playing. */
   const hush = useCallback(() => {
@@ -366,6 +390,37 @@ export default function Tajweed() {
       }
     });
   }, [hush, play]);
+
+  /** Plays the sheikh saying one word of a verse, from the corrections. */
+  const hearWord = useCallback((ayahAt: number, w: number) => {
+    const key = `${ayahAt}:${w}`;
+    takeAudio.current?.pause();
+    if (hearingWord === key) {
+      pause();
+      mode.current = 'main';
+      return setHearingWord(null);
+    }
+    const word = TIMELINE.verses[AYAHS[ayahAt].first].words[w];
+    if (!word) return;
+    mode.current = 'word';
+    setHearingWord(key);
+    play({
+      fromMs: word.startMs - WORD_LEAD_MS,
+      untilMs: word.endMs + WORD_TAIL_MS,
+      onDone: () => {
+        mode.current = 'main';
+        setSoundNow(-1);
+        setHearingWord(null);
+      }
+    });
+  }, [hearingWord, pause, play]);
+
+  /** From the corrections: the verse again, with the child's turn after it, then back to the corrections. */
+  const practise = useCallback((ayahAt: number) => {
+    setHearingWord(null);
+    goTo(AYAHS[ayahAt].first, true);
+    practising.current = ayahAt;
+  }, [goTo]); // eslint-disable-line react-hooks/exhaustive-deps
 
   /** Done comparing: on to the next verse, or record the verse again. */
   const compareDone = useCallback((again: boolean) => {
@@ -414,6 +469,7 @@ export default function Tajweed() {
 
   /** Moves a verse back or forward, or replays this one. */
   const goAyah = useCallback((step: number, autoplay: boolean) => {
+    practising.current = null;
     const to = ayahOf(onVerse.current) + step;
     if (to >= 0 && to < AYAHS.length) goTo(AYAHS[to].first, autoplay);
   }, [goTo]);
@@ -688,6 +744,15 @@ export default function Tajweed() {
                 {result?.awards.map((id) => (
                   <p key={id} className="tj-new-award"><Medal size={20} strokeWidth={2.5} aria-hidden /><strong>{tx(T.newAward)}</strong> {tx(AWARD_TEXT[id].name)}</p>
                 ))}
+                {[...checks.values()].some((c) => c !== 'none') && (
+                  <Corrections
+                    checks={[...checks.entries()].filter((e): e is [number, VerseCheck] => typeof e[1] === 'object').sort((a, b) => a[0] - b[0])}
+                    waiting={[...checks.values()].includes('checking')}
+                    hearing={hearingWord}
+                    onHear={hearWord}
+                    onPractise={practise}
+                  />
+                )}
                 <div className="tj-done-actions">
                   {!TRIAL && nextSurah && result && isOpen(result.progress, nextSurah.n) && (
                     <a className="tj-pill tj-pill-go" href={gameUrl(nextSurah.n)}>{tx(T.nextSurah)}<ArrowLeft size={18} strokeWidth={2.5} className="tj-flip tj-forward" /></a>

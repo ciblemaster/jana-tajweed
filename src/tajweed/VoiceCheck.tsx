@@ -1,6 +1,6 @@
 import { Sparkles } from 'lucide-react';
 import { useState } from 'react';
-import { judgeRecitation, type CheckLetter, type TajweedTimeline, type VoiceResult } from '../core';
+import { isHum, judgeRecitation, type CheckLetter, type TajweedTimeline, type VoiceResult } from '../core';
 import { checkRecitation } from '../account/voice';
 import { APP_TEXT as A } from '../core/appTexts';
 import { fontStack } from '../core/fonts';
@@ -25,8 +25,14 @@ export async function checkVerse(timeline: TajweedTimeline, verseIndex: number, 
   const { letters, words } = verseForCheck(timeline, verseIndex);
   const heard = await checkRecitation(letters, take);
   if (!heard) return null;
-  const { words: states, tip } = judgeRecitation(letters, heard);
-  return { ayah, words, states, tip: tip.kind === 'hold' ? { kind: 'hold', word: tip.word, counts: tip.counts } : tip };
+  const { words: states, tip, fixes } = judgeRecitation(letters, heard);
+  return {
+    ayah,
+    words,
+    states,
+    tip: tip.kind === 'hold' ? { kind: 'hold', word: tip.word, counts: tip.counts } : tip,
+    fixes: fixes.map((f) => (f.kind === 'hold' ? { kind: 'hold', word: f.word, counts: f.counts, hum: isHum(f.rule) } : f))
+  };
 }
 
 /** Each word green, orange or grey, and the one tip. */

@@ -13,7 +13,11 @@ export interface VerseCheck {
   states: WordState[];
   /** The one tip the child was given. */
   tip: { kind: 'great' } | { kind: 'say'; word: number } | { kind: 'hold'; word: number; counts: number };
+  /** Every correction, most needed first. Missing on checks kept before corrections were listed. */
+  fixes?: VerseFix[];
 }
+
+export type VerseFix = { kind: 'say' | 'almost'; word: number } | { kind: 'hold'; word: number; counts: number; hum: boolean };
 
 export interface RecordingRequest {
   id: string;

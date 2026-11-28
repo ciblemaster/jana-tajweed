@@ -24,9 +24,17 @@ export type Tip =
   | { kind: 'say'; word: number }
   | { kind: 'hold'; word: number; rule: TajweedRule; counts: number };
 
+/** Something to correct in one word. Every one in a verse is kept, so the child can work through them at the end. */
+export type Fix =
+  | { kind: 'say'; word: number }
+  | { kind: 'hold'; word: number; rule: TajweedRule; counts: number }
+  | { kind: 'almost'; word: number };
+
 export interface VoiceResult {
   words: WordState[];
   tip: Tip;
+  /** Every correction, most needed first: words to say again, then sounds to hold longer, then words almost there. */
+  fixes: Fix[];
   /** How long one count lasted in this recitation, in ms. */
   beatMs: number;
 }
@@ -54,6 +62,8 @@ const SHORT_VOWELS = /[َُِ]/;
 const MADD: TajweedRule[] = ['madd2', 'madd4', 'madd5', 'madd6'];
 // Held letters with a sound of their own: the hum lasts from the letter until the next sound.
 const HUM: TajweedRule[] = ['ghunnah', 'ikhfa', 'iqlab'];
+/** Whether a held letter is a hum (of a noon or meem) rather than a long vowel. */
+export const isHum = (rule: TajweedRule) => HUM.includes(rule);
 
 const median = (list: number[]) => {
   const s = [...list].sort((a, b) => a - b);
@@ -134,19 +144,26 @@ export function judgeRecitation(letters: CheckLetter[], heard: Heard[]): VoiceRe
     return mean >= CLEAR ? 'good' : mean >= UNSURE ? 'almost' : 'again';
   });
 
-  let hold: Tip | null = null;
+  // The first sound held too short in each word.
+  const holds = new Map<number, Extract<Fix, { kind: 'hold' }>>();
   letters.forEach((l, i) => {
     const want = wantedCounts(letters, i);
     if (!want || words[l.word] === 'again') return;
     const got = heldCounts(letters, heard, i, beatMs);
     if (got !== null && got < want * (HUM.includes(l.rule!) ? HUM_SHARE : HOLD_SHARE)) {
       if (words[l.word] === 'good') words[l.word] = 'almost';
-      hold ??= { kind: 'hold', word: l.word, rule: l.rule!, counts: want };
+      if (!holds.has(l.word)) holds.set(l.word, { kind: 'hold', word: l.word, rule: l.rule!, counts: want });
     }
   });
 
+  const fixes: Fix[] = [
+    ...words.flatMap((s, word): Fix[] => (s === 'again' ? [{ kind: 'say', word }] : [])),
+    ...holds.values(),
+    ...words.flatMap((s, word): Fix[] => (s === 'almost' && !holds.has(word) ? [{ kind: 'almost', word }] : []))
+  ];
+
   // One tip only: a word to say again comes first, then a sound to hold longer.
-  const missed = words.indexOf('again');
-  const tip: Tip = missed >= 0 ? { kind: 'say', word: missed } : hold ?? { kind: 'great' };
-  return { words, tip, beatMs };
+  const first = fixes.find((f): f is Exclude<Fix, { kind: 'almost' }> => f.kind !== 'almost');
+  const tip: Tip = first ?? { kind: 'great' };
+  return { words, tip, beatMs, fixes };
 }
